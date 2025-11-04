@@ -1,0 +1,29 @@
+[project]
+name = "py-e"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "noname",email = "<jxp@qq.com>"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests (>=2.32.5,<3.0.0)",
+    "python-pptx (>=1.0.2,<2.0.0)",
+    "pypandoc (>=1.15,<2.0)",
+    "pandoc (>=2.4,<3.0)",
+    "openpyxl (>=3.1.5,<4.0.0)",
+    "pandas (>=2.3.3,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "py-e", from = "src"}]
+
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
