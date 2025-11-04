@@ -78,15 +78,16 @@ def walk_with_pathlib(root: Path, indent=0):
         # 分类
         if ext in IMAGE_EXTENSIONS:
             image_files.append((filename, full_path))
-            print("  " * (indent + 1) + f"🖼️  {filename} (图片)")
+            print("  " * (indent + 1) + f"🖼️  {filename} (图片) - {file_path.stem}")
         elif ext in VIDEO_EXTENSIONS:
             video_files.append((filename, full_path))
-            print("  " * (indent + 1) + f"🎥 {filename} (视频)")
+            print("  " * (indent + 1) + f"🎥 {filename} (视频) - {file_path.stem}")
         else:
             print("  " * (indent + 1) + f"📄 {filename}")
 
     # 在递归处理子目录
     for dir_path in dirs:
+        print(f"🔍 开始遍历子目录: {dir_path.name}\n")
         sub_all, sub_img, sub_vid = walk_with_pathlib(dir_path, indent + 1)
         all_files.extend(sub_all)
         image_files.extend(sub_img)
@@ -102,7 +103,7 @@ def scan_by_folder_structure(root_dir: str):
     all_files, image_files, video_files = walk_with_pathlib(root)
 
     # 最后汇总统计（可选）
-    print("\n" + "="*60)
+    print("="*60)
     print(f"📊 总计: {len(all_files)} 个文件")
     print(f"🖼️  图片: {len(image_files)} 个")
     print(f"🎥 视频: {len(video_files)} 个")
