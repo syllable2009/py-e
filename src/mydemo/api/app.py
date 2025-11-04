@@ -7,4 +7,5 @@ app.include_router(user_router)
 def read_root():
     return {"Hello": "World"}
 
-# sudo poetry run uvicorn mydemo.main:app --reload --host 0.0.0.0 --port 8000
+
+# sudo poetry run uvicorn mydemo.api.app:app --reload --host 0.0.0.0 --port 8000
