@@ -5,7 +5,7 @@ import atexit
 
 # 模块级单例：全局唯一的 Playwright + Browser
 _playwright = None
-_browser = None
+_browser: Browser = None
 
 
 def _init_browser():
@@ -49,7 +49,7 @@ class ChromeBrowser:
         _init_browser()  # 确保浏览器已启动
         self.cookie_path = Path(cookie_path) if cookie_path else None
         # 创建独立的上下文（隔离 Cookie、Storage 等）
-        self._context = _browser.new_context(
+        self._context: BrowserContext = _browser.new_context(
             viewport=viewport or {"width": 1920, "height": 1080},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             permissions=["geolocation", "notifications"],  # 模拟真实用户权限
