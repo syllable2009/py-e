@@ -54,3 +54,4 @@ CMD ["python", "-m", "uvicorn", "mydemo.main:app", "--host", "0.0.0.0", "--port"
 
 # docker build -t mypy-app:1.0 .
 # docker run -p 8000:8000 mypy-app:1.0
+# poetry run uvicorn mydemo.main:app --reload --host 0.0.0.0 --port 8000

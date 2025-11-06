@@ -63,7 +63,7 @@ class PPTGenerationAgent:
         if template_path and os.path.exists(template_path):
             extra_args.extend(['--reference-doc', str(template_path)])
         else:
-            extra_args.extend(['--reference-doc', '/Users/jiaxiaopeng/ppt/5555.potx'])
+            extra_args.extend(['--reference-doc', '/Users/jiaxiaopeng/ppt/6666.potx'])
 
         pptx_name = f"{uuid.uuid4().hex}.pptx";
         out_temp_path = os.path.join(temp_dir, pptx_name)
