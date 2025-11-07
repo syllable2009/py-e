@@ -1,6 +1,6 @@
 import re, os, json
 from pathlib import Path
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
+from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Response
 import atexit
 
 # 模块级单例：全局唯一的 Playwright + Browser
@@ -14,16 +14,21 @@ def _init_browser():
     global _playwright, _browser
     if _browser is None:
         _playwright = sync_playwright().start()
-        _browser = _playwright.chromium.launch(
+        _browser = _playwright.firefox.launch(
             headless=False,
             # 可选：添加启动参数优化稳定性
             args=[
-                "--disable-blink-features=AutomationControlled",
-                "--disable-extensions",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
+                "--disable-web-security",  # 禁用同源策略（Same-Origin Policy
+                "--disable-features=SafeBrowsing",  # 禁用 Google 的 Safe Browsing（安全浏览） 功能
+                "--safebrowsing-disable-download-protection",  # 禁用 下载保护（Download Protection）
+                "--safebrowsing-disable-extension-blacklist",  # 允许安装被 Safe Browsing 黑名单禁止的扩展
+                "--disable-blink-features=AutomationControlled",  # --disable-blink-features=AutomationControlled
+                "--disable-popup-blocking",  # 禁用弹窗拦截。
+                "--disable-extensions",  # 启动时不加载任何 Chrome 扩展。
+                "--no-sandbox",  # 禁用 Chromium 的沙箱（sandbox）安全机制。
+                "--disable-setuid-sandbox",  # 禁用 setuid 沙箱（Linux 特有
+                "--disable-dev-shm-usage",  # 避免使用 /dev/shm 共享内存。
+                "--disable-gpu",  # 禁用 GPU 硬件加速。
             ]
         )
         # 注册退出清理
@@ -118,11 +123,18 @@ class ChromeBrowser:
         print("Deleting browser context...")
         self.close()
 
+    def raise_response_status(self, response: Response):
+        if response and response.ok:
+            print(f"✅ 页面加载成功! 状态码: {response.status}")
+        else:
+            print(f"❌ 页面加载失败! 状态码: {response.status if response else '无响应'}")
+
 
 if __name__ == "__main__":
     cb = ChromeBrowser(cookie_path="cookies.json")
     page = cb.get_new_page()
-    page.goto("https://playwright.dev/python/docs/library")
+    response = page.goto("https://playwright.dev/python/docs/library", wait_until="domcontentloaded", timeout=60000)
+    cb.raise_response_status(response)
     print(page.title())
     page.screenshot(path="example.png")
     cb._save_storage_state()

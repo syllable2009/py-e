@@ -8,6 +8,12 @@ if (n := len(data)) > 10:
 config = {"debug": True}
 mode = config.get("mode", "production")  # 如果没有 "mode"，默认为 "production",没有和存在为None值
 
+# 作用域
+Python 没有块级作用域（block scope），只有 函数、类、模块级别 的作用域。控制流语句（如 if, for, while, try）不会创建新的作用域。
+global 用于任何地方修改模块级全局变量。
+nonlocal 用于嵌套函数修改外层非全局变量；
+
+
 # 数据结构
 列表（list）—— 有序、可变、允许重复
 lst = [1, 2, 3]
@@ -32,8 +38,8 @@ s = set([1, 2, 2, 3])  # {1, 2, 3}
 empty_set = set()      # 注意：{} 是空字典
 
 # yield：生成器（Generator）的关键字
-用于定义生成器函数（返回迭代器），节省内存：不一次性生成所有数据，按需生成
-函数执行到 yield 时暂停，返回值；下次调用时从暂停处继续
+用于定义生成器函数（返回迭代器），yield 实现了 “懒加载” / “流式处理” —— 用多少，算多少，省内存
+每次调用 next() 或在 for 循环中迭代时，函数会从上次 yield 的位置继续执行，直到下一个 yield；下次调用时从暂停处继续。
 def count_up_to(n):
     i = 1
     while i <= n:
