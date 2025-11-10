@@ -1,6 +1,7 @@
 import re, os, json
 from pathlib import Path
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Response
+from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Response, Download, \
+    TimeoutError as PlaywrightTimeoutError
 import atexit
 
 # 模块级单例：全局唯一的 Playwright + Browser
@@ -129,6 +130,48 @@ class ChromeBrowser:
         else:
             print(f"❌ 页面加载失败! 状态码: {response.status if response else '无响应'}")
 
+    def download_file(self, page: Page, xpath: str, filename: str, download_path: str = "./downloads",
+                      timeout: float = 30000):
+        # 监听下载事件，没有触发下载会抛出异常
+        try:
+            # 监听下载事件（最多等待 timeout 毫秒）
+            with page.expect_download(timeout=timeout) as download_info:
+                page.click(xpath, timeout=timeout)
+
+            # 如果成功捕获到下载
+            download: Download = download_info.value
+            # 创建下载目录
+            download_dir = Path(download_path)
+            download_dir.mkdir(parents=True, exist_ok=True)
+            # 构造目标路径
+            target_path = download_dir / filename
+            download.save_as(target_path)
+            # 保存文件（Playwright 会自动等待下载完成
+            print(f"✅ 文件下载成功!: {target_path}")
+            # 新页面下载也会触发
+            # pages_after = len(context.pages)
+            # new_page = context.pages[-1]  # 最后一个页面通常是新打开的
+        except PlaywrightTimeoutError:
+            # 点击后未触发下载（超时）
+            print(f"❌ 超时：点击 {xpath} 后未检测到下载行为。")
+            # 可选：截图或记录当前页面状态用于调试
+            # page.screenshot(path=f"{download_path}/download_failed_{filename}.png")
+            raise  # 或根据需求决定是否继续抛出异常
+        except Exception as e:
+            # 其他异常（如保存失败、文件系统错误等）
+            print(f"❌ 下载过程中发生错误: {e}")
+            raise
+        print(f"✅ 文件下载成功!: {target_path}")
+
+    # 获取最新打开的一个页面，通常用于获取弹出的新页面
+    def get_latest_page(self) -> Page:
+        all_pages = self._context.pages
+        if len(all_pages) > 1:
+            # 最后一个通常是最新打开的
+            latest_page = all_pages[-1]
+            latest_page.bring_to_front()
+            return latest_page
+        return None
 
 if __name__ == "__main__":
     cb = ChromeBrowser(cookie_path="cookies.json")
