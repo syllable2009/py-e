@@ -25,3 +25,6 @@ __author__ = "Alice"
 # 4.标识为一个包路径，而非普通目录
 
 Python 模块名不能包含 -，Poetry 通常会自动将 - 转为 _
+
+相对导入（如 from .service import SearchService）只能在包内部被其他模块导入时使用，不能用于直接执行的脚本。
+直接运行一个使用了相对导入（from .xxx）的 Python 文件，而 Python 无法识别当前模块属于哪个包（即没有“父包”上下文）
