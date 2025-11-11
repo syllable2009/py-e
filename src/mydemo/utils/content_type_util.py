@@ -35,4 +35,6 @@ def infer_file_name(url: str, content_type: str) -> str:
     if "." not in filename:
         ext = infer_file_type(content_type)
         filename = filename + ext
-    return filename
+    # 清理非法字符（Windows
+    filename = "".join(c for c in filename if c.isalnum() or c in "._-")
+    return filename or "unkown.file"
