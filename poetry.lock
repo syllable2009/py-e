@@ -1141,6 +1141,23 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 reference = "tuna"
 
 [[package]]
+name = "punq"
+version = "0.7.0"
+description = "An IOC Container for Python 3.8+"
+optional = false
+python-versions = ">=3.8.1,<4.0"
+groups = ["main"]
+files = [
+    {file = "punq-0.7.0-py3-none-any.whl", hash = "sha256:7e0aca446c36a73674ec3fc078ec5e90e7a172ee349537d075ff20d73c3b1810"},
+    {file = "punq-0.7.0.tar.gz", hash = "sha256:bb7a6cc75a2e7d51b861b0e11f4830a12617b3ee33dbced9ce2be6a98ba39d63"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+reference = "tuna"
+
+[[package]]
 name = "pydantic"
 version = "2.12.4"
 description = "Data validation using Python type hints"
@@ -2044,5 +2061,5 @@ reference = "tuna"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10"
-content-hash = "a047625c840745df56203505b0a870a120ac39bda840ab4d14d5b6dfe29f80a5"
+python-versions = ">=3.10,<4.0"
+content-hash = "95b50f00aa82848204746b52c32e3a1d6bd37461e1b36cbbb12cf8646a7d88eb"
