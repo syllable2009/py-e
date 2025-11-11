@@ -8,7 +8,7 @@ __container = None
 def create_container():
     container = punq.Container()
 
-    # 延迟导入，避免顶层导入
+    # 延迟导入，避免顶层导入,使用函数内 import 防止循环导入
     # 注册服务（顺序无关，punq 支持自动依赖解析）
     from mydemo.service.email_service import EmailService
     from mydemo.service.user_service import UserService
@@ -30,6 +30,8 @@ class UserHandler:
         # 从容器解析依赖
         # 在其他模块中使用
         container = get_container()
+        # 按需解析调用
+        # container.resolve("UserService")  # 或直接传类
         from mydemo.service.user_service import UserService
         user_service1 = container.resolve(UserService)
         print(user_service1)

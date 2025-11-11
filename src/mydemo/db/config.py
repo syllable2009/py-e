@@ -1,0 +1,1 @@
+DB_URL = "mysql+pymysql://user:password@localhost:3306/mydb?charset=utf8mb4"

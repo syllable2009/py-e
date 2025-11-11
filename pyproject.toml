@@ -18,7 +18,9 @@ dependencies = [
     "uvicorn[standard] (>=0.38.0,<0.39.0)",
     "playwright (>=1.55.0,<2.0.0)",
     "pydantic (>=2.12.4,<3.0.0)",
-    "punq (>=0.7.0,<0.8.0)"
+    "punq (>=0.7.0,<0.8.0)",
+    "sqlalchemy (>=2.0.44,<3.0.0)",
+    "pymysql (>=1.1.2,<2.0.0)"
 ]
 
 [tool.poetry]
