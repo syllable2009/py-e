@@ -3,6 +3,7 @@ from pathlib import Path
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
 VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.m4v'}
 
+
 def scan_directory_pathlib(root_dir):
     root = Path(root_dir)
     if not root.exists():
@@ -103,7 +104,7 @@ def scan_by_folder_structure(root_dir: str):
     all_files, image_files, video_files = walk_with_pathlib(root)
 
     # 最后汇总统计（可选）
-    print("="*60)
+    print("=" * 60)
     print(f"📊 总计: {len(all_files)} 个文件")
     print(f"🖼️  图片: {len(image_files)} 个")
     print(f"🎥 视频: {len(video_files)} 个")
@@ -111,7 +112,44 @@ def scan_by_folder_structure(root_dir: str):
     return all_files, image_files, video_files
 
 
+# 查找文件路径下的三级目录，根目录为第 0 层，其子目录为第 1 层，孙目录为第 2 层，曾孙目录为第 3 层
+def list_depth_limited(root: str, max_depth: int = 2):
+    root_path = Path(root)
+    if not root_path.is_dir():
+        raise ValueError(f"{root} 不是有效目录")
+
+    results = {
+        "directories": [],
+        "files": []
+    }
+
+
+    def walk(current: Path, depth: int):
+        print(f"start walking {current}, depth={depth}")
+        if depth >= max_depth:
+            return
+        # 当前目录下的内容
+        for item in current.iterdir():
+            if item.is_dir():
+                if depth == 2:
+                    results["directories"].append(str(item))
+                walk(item, depth + 1)  # 递归进入子目录
+
+            else:
+                # results["files"].append(str(item))
+                pass
+
+
+    walk(root_path, depth=0)
+    return results
+
+
+# 查找文件路径下的文件而非目录
+
+
 # 使用示例
 if __name__ == "__main__":
     # scan_directory_pathlib("/Users/jiaxiaopeng/Downloads/我的壁纸")  # 替换为你的目录路径
-    scan_by_folder_structure("/Users/jiaxiaopeng/Downloads/我的壁纸")
+    # scan_by_folder_structure("/Users/jiaxiaopeng/Downloads/我的壁纸")
+    limited = list_depth_limited("/Users/jiaxiaopeng")
+    print(limited)
