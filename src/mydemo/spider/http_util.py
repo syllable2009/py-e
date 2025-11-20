@@ -1,6 +1,8 @@
 import httpx
 import json
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Union, Optional, List, Tuple
+
+from playwright.async_api import Cookie
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
@@ -100,6 +102,15 @@ async def request(
         raise APIRequestError(f"API 业务错误: {err_msg}", url=url)
 
     return data
+
+def convert_cookies(cookies: Optional[List[Cookie]]) -> Tuple[str, Dict]:
+    if not cookies:
+        return "", {}
+    cookies_str = ";".join([f"{cookie.get('name')}={cookie.get('value')}" for cookie in cookies])
+    cookie_dict = dict()
+    for cookie in cookies:
+        cookie_dict[cookie.get('name')] = cookie.get('value')
+    return cookies_str, cookie_dict
 
 
 if __name__ == "__main__":

@@ -1,15 +1,12 @@
 from mydemo.spider.platform.bilibili import BilibiliCrawler
+from mydemo.spider.platform.xiaohongshu.xhs import XiaoHongShuCrawler
 from mydemo.spider.platform.zhihu import ZhihuCrawler
 import mydemo.spider.platform
 import asyncio
-import config
 import sys
 import signal
 from signal import SIGINT, SIGTERM
 from typing import Iterable, Optional, Sequence, Type, TypeVar
-
-
-
 
 
 async def async_cleanup():
@@ -42,6 +39,7 @@ async def async_cleanup():
     # if config.SAVE_DATA_OPTION in ["db", "sqlite"]:
     #     await db.close()
 
+
 def cleanup():
     """同步清理函数"""
     try:
@@ -53,26 +51,30 @@ def cleanup():
     except Exception as e:
         print(f"[Main] 清理时出错: {e}")
 
+
 def signal_handler(signum, _frame):
     """信号处理器，处理Ctrl+C等中断信号"""
     print(f"\n[Main] 收到中断信号 {signum}，正在清理资源...")
     cleanup()
     sys.exit(0)
 
+
 class SpiderFactory(object):
     CRAWLERS = {
         "bili": BilibiliCrawler,
         "zhihu": ZhihuCrawler,
+        "xhs": XiaoHongShuCrawler,
     }
 
     @staticmethod
-    def create_spider_obj(spider_name: str):
-        crawler_class = SpiderFactory.CRAWLERS.get(spider_name)
+    def create_spider_obj(platform: str):
+        crawler_class = SpiderFactory.CRAWLERS.get(platform)
         if not crawler_class:
             raise ValueError(
                 "Invalid Media Platform Currently only supported bili or zhihu ..."
             )
         return crawler_class()
+
 
 async def parse_cmd(argv: Optional[Sequence[str]] = None):
     pass
