@@ -3,6 +3,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 import traceback
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+import os
+import asyncio
 
 from mydemo.api.user_api import user_router
 from mydemo.api.demo_api import demo_router
@@ -58,5 +64,30 @@ app.include_router(demo_router)
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+os.environ["OPENAI_API_KEY"] = "your-api-key-here"
+
+# 初始化 LangChain 的 LLM（启用流式）
+llm = ChatOpenAI(model="gpt-3.5-turbo", streaming=True)
+
+async def event_stream(prompt: str):
+    """生成 SSE 格式的流"""
+    async for chunk in llm.astream([HumanMessage(content=prompt)]):
+        # chunk.content 是单个 token 或片段
+        if chunk.content:
+            # SSE 格式：data: ...\n\n
+            yield f"data: {chunk.content}\n\n"
+            await asyncio.sleep(0)  # 让出控制权
+
+@app.get("/stream")
+async def stream_response(prompt: str = "你好"):
+    return StreamingResponse(
+        event_stream(prompt),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 # sudo poetry run uvicorn mydemo.main:app --reload --host 0.0.0.0 --port 8000

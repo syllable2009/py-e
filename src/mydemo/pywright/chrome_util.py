@@ -3,41 +3,67 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Response, Download, \
     TimeoutError as PlaywrightTimeoutError
 import atexit
+import random
 
 # 模块级单例：全局唯一的 Playwright + Browser
 _playwright = None
 _browser: Browser = None
 
+default_headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+}
+
+chromium_args = [
+    "--disable-gpu",  # 禁用 GPU 硬件加速
+    "--disable-gpu-compositing",
+    "--disable-software-rasterizer",
+    "--no-sandbox",  # 禁用 Chromium 的沙箱（sandbox）安全机制。
+    "--disable-dev-shm-usage",  # 避免使用 /dev/shm 共享内存。
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-infobars",
+    "--window-position=0,0",
+    "--ignore-certificate-errors",
+    "--ignore-certificate-errors-spki-list",
+    "--disable-blink-features=AutomationControlled",
+    "--disable-renderer-backgrounding",
+    "--disable-ipc-flooding-protection",
+    "--force-color-profile=srgb",
+    "--mute-audio",
+    "--disable-background-timer-throttling",
+    "--lang=zh-CN",
+    "--disable-web-security",  # 禁用同源策略（Same-Origin Policy
+    "--disable-features=SafeBrowsing",  # 禁用 Google 的 Safe Browsing（安全浏览） 功能
+    "--safebrowsing-disable-download-protection",  # 禁用 下载保护（Download Protection）
+    "--safebrowsing-disable-extension-blacklist",  # 允许安装被 Safe Browsing 黑名单禁止的扩展
+    "--disable-popup-blocking",  # 禁用弹窗拦截。
+    "--disable-extensions",  # 启动时不加载任何 Chrome 扩展。
+    "--disable-setuid-sandbox",  # 禁用 setuid 沙箱（Linux 特有
+]
+
 
 def _init_browser():
-    print("Initializing browser...")
     global _browser
     global _playwright, _browser
     if _browser is None:
+        print("创建playwright实例...")
         _playwright = sync_playwright().start()
-        _browser = _playwright.firefox.launch(
+        print("启动浏览器...")
+        _browser = _playwright.chromium.launch(
             headless=False,
             # 可选：添加启动参数优化稳定性
-            args=[
-                "--disable-web-security",  # 禁用同源策略（Same-Origin Policy
-                "--disable-features=SafeBrowsing",  # 禁用 Google 的 Safe Browsing（安全浏览） 功能
-                "--safebrowsing-disable-download-protection",  # 禁用 下载保护（Download Protection）
-                "--safebrowsing-disable-extension-blacklist",  # 允许安装被 Safe Browsing 黑名单禁止的扩展
-                "--disable-blink-features=AutomationControlled",  # --disable-blink-features=AutomationControlled
-                "--disable-popup-blocking",  # 禁用弹窗拦截。
-                "--disable-extensions",  # 启动时不加载任何 Chrome 扩展。
-                "--no-sandbox",  # 禁用 Chromium 的沙箱（sandbox）安全机制。
-                "--disable-setuid-sandbox",  # 禁用 setuid 沙箱（Linux 特有
-                "--disable-dev-shm-usage",  # 避免使用 /dev/shm 共享内存。
-                "--disable-gpu",  # 禁用 GPU 硬件加速。
-            ]
+            args=chromium_args
         )
         # 注册退出清理
         atexit.register(_cleanup)
 
 
 def _cleanup():
-    print("Closing browser...")
+    print("清理playwright和浏览器...")
     global _playwright, _browser
     if _browser:
         _browser.close()
@@ -51,9 +77,8 @@ def _cleanup():
 class ChromeBrowser:
 
     def __init__(self, cookie_path: str = None, viewport=None, user_agent=None):
-        print("Initializing browser context...")
         _init_browser()  # 确保浏览器已启动
-        self.cookie_path = Path(cookie_path) if cookie_path else None
+        print("创建浏览器上下文...")
         # 创建独立的上下文（隔离 Cookie、Storage 等）
         self._context: BrowserContext = _browser.new_context(
             viewport=viewport or {"width": 1920, "height": 1080},
@@ -64,26 +89,9 @@ class ChromeBrowser:
             timezone_id="Asia/Shanghai",
             accept_downloads=True
         )
-        stealth_js = """
-        // 覆盖常见自动化检测特征
-        Object.defineProperty(navigator, 'webdriver', { get: () => false, });
-        window.chrome = { runtime: {} };
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh'] });
-        Object.defineProperty(document, 'hidden', { get: () => false });
-        Object.defineProperty(document, 'visibilityState', { get: () => 'visible' });
-
-        // 防止检测到 Playwright 的 CDP 特征
-        const originalQuery = window.navigator.permissions.query;
-        window.navigator.permissions.query = (parameters) => (
-            parameters.name === 'notifications'
-                ? Promise.resolve({ state: Notification.permission })
-                : originalQuery(parameters)
-        );
-        """
-
-        self._context.add_init_script(stealth_js)
         # 如果 cookie_path 存在，加载状态
+        # 从文件加载存储状态
+        self.cookie_path = Path(cookie_path) if cookie_path else None
         if self.cookie_path and self.cookie_path.exists():
             self._context.add_cookies(self._load_cookies())
         # 注册退出时自动关闭（防止忘记调用 close）
@@ -110,7 +118,10 @@ class ChromeBrowser:
                 print(f"❌ 保存 Cookie 失败: {e}")
 
     def get_new_page(self) -> Page:
-        return self._context.new_page()
+        print("创建页面...")
+        new_page = self._context.new_page()
+        new_page.set_extra_http_headers(default_headers)
+        return new_page
 
     def close(self):
         """关闭当前上下文（不影响其他 ChromeBrowser 实例）"""
@@ -172,6 +183,16 @@ class ChromeBrowser:
             latest_page.bring_to_front()
             return latest_page
         return None
+
+    # 模拟人类行为
+    def simulation_operation(self, page: Page = None):
+        """模拟人类滚动行为"""
+        page = page or self.page
+        for _ in range(2):
+            scroll_height = random.randint(200, 500)
+            page.evaluate(f"window.scrollBy(0, {scroll_height})")
+            page.wait_for_timeout(random.randint(500, 1200))
+
 
 if __name__ == "__main__":
     cb = ChromeBrowser(cookie_path="cookies.json")

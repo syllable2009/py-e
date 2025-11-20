@@ -73,7 +73,7 @@ for fruit in fruits:
 for index, fruit in enumerate(fruits): # 使用 enumerate() 获取索引 + 值
     print(f"{index}: {fruit}")
 
-同时遍历 key 和 value（推荐！）
+# 同时遍历 key 和 value（推荐！）
 for key, value in person.items():
     print(f"{key}: {value}")
 
@@ -86,9 +86,28 @@ def count_up_to(n):
     while i <= n:
         yield i
         i += 1
-遍历生成器
+# 遍历生成器
 for num in count_up_to(3):
     print(num)  # 1, 2, 3
 
 
+# Python 装饰器（decorator）
+是一种非常强大且常用的功能，用于在不修改原函数代码的前提下，动态地增加或修改函数/类的行为。
+装饰器本质上是一个接受函数（或类）作为参数并返回一个新函数（或类）的高阶函数。
+使用 @ 语法糖,等价于调用@后面的函数，把当前定义的方法当做参数传递
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        print("Calling function:", func.__name__)
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def add(a, b):
+    return a + b
+
+@my_decorator 等价于 my_decorator(add)
+
+print(add(3, 5)) # 输出: Calling function: add \n 8
+
+# 
 
