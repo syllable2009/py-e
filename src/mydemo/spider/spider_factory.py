@@ -1,4 +1,6 @@
 from mydemo.spider.platform.bilibili import BilibiliCrawler
+from mydemo.spider.platform.tieba.tieba import TiebaShuCrawler
+from mydemo.spider.platform.xcode.xcode import XCodeCrawler
 from mydemo.spider.platform.xiaohongshu.xhs import XiaoHongShuCrawler
 from mydemo.spider.platform.zhihu import ZhihuCrawler
 import mydemo.spider.platform
@@ -64,6 +66,8 @@ class SpiderFactory(object):
         "bili": BilibiliCrawler,
         "zhihu": ZhihuCrawler,
         "xhs": XiaoHongShuCrawler,
+        "tieba": TiebaShuCrawler,
+        "xcode": XCodeCrawler,
     }
 
     @staticmethod
@@ -73,6 +77,7 @@ class SpiderFactory(object):
             raise ValueError(
                 "Invalid Media Platform Currently only supported bili or zhihu ..."
             )
+        # 实例化执行init方法
         return crawler_class()
 
 

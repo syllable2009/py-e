@@ -40,6 +40,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     self.user_agent,
                     headless=config.HEADLESS,
                 )
+                # 初始化脚本
                 await self.browser_context.add_init_script(
                     path="/Users/jiaxiaopeng/github/mypy/src/mydemo/spider/libs/stealth.min.js")
 

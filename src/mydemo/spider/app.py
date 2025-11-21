@@ -26,6 +26,7 @@ async def main():
     """主协程"""
     print("[Main] 程序启动，按 Ctrl+C 退出")
     global crawler
+    # 通过静态工厂获取实例
     crawler = SpiderFactory.create_spider_obj(platform=config.PLATFORM)
     print(type(crawler))
     await crawler.start()
