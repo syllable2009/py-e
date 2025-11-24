@@ -56,6 +56,13 @@ class XCodeCrawler(AbstractCrawler):
             links = await page_analyze_link_by_xpath(tab,xpath)
             print(f"links={links}")
             await tab.close()
+            # 当前页面提到前台
+            await self.context_page.bring_to_front()
+            await self.context_page.goto(url="https://www.21voa.com/special_english/wilbur-and-orville-wright-the-first-airplane-93397.html",wait_until="networkidle")
+
+            link_locator = self.context_page.locator("xpath=/html/body/div[4]/div[2]/div[3]/div[2]/div/div[1]/div[4]/div[3]/div/a[1]")
+            await link_locator.wait_for(state="visible")
+            await click_download(self.context_page, link_locator,save_path=None)
             await asyncio.sleep(3)
             if 1 == 1:
                 return

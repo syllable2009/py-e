@@ -1,4 +1,9 @@
-from playwright.async_api import Page
+import uuid
+
+from playwright.async_api import Page, Download
+import os
+from urllib.parse import urljoin, urlparse
+import datetime
 
 
 # xpath解析页面的链接
@@ -68,4 +73,80 @@ async def open_link_in_new_tab(page: Page, text: str, timeout: float = 10000):
         print(f"open_link_in_new_tab timeout: 超时 {timeout}ms 内未完成操作")
     except Exception as e:
         print(f"open_link_in_new_tab error: {e}")
+    return None
+
+
+# 点击打开新页面下载
+async def click_new_page_download():
+    pass
+
+
+# 通过导航到下载链接触发下载（适用于直接文件链接）
+async def download_link(page: Page, url: str, save_path: str = None):
+    # 通过导航到下载链接触发下载（适用于直接文件链接）
+    async with page.expect_download(timeout=30000) as download_info:
+        await page.goto(url, wait_until="domcontentloaded")
+    download: Download = await download_info.value
+    suggested_filename = await download.suggested_filename()
+    if not suggested_filename:
+        suggested_filename = os.path.basename(urlparse(url).path) or uuid.uuid4().hex
+    # 5. 保存文件
+    if save_path is None:
+        save_path = os.getcwd()  # 或使用临时目录
+    file_path = os.path.join(save_path, suggested_filename)
+    await download.save_as(file_path)
+    print(f"文件已保存至: {file_path}")
+
+
+# 点击触发下载
+async def click_download(page: Page, selector: str, save_path: str = None):
+    """
+    点击按钮并处理下载
+
+    :param page: 当前页面
+    :param button_selector: 按钮的选择器（如 'button#download-btn'）
+    :param save_path: 保存路径（如 './books/tcpip.pdf'），若为 None 则返回临时路径
+    :return: 下载文件的完整路径
+    """
+    popups = []  # 用于收集弹出页面
+
+    def handle_popup(popup_page):
+        popups.append(popup_page)
+
+    # 监听 popup 事件
+    page.on("popup", handle_popup)
+
+    try:
+        # 1. 监听 download 事件
+        async with page.expect_download() as download_info:
+            # 2. 点击按钮（触发下载） await page.click(link_locator)
+            await selector.click()
+        # 3. 获取 download 对象
+        download: Download = await download_info.value
+
+        # 关闭所有弹出页面
+        for popup in popups:
+            try:
+                await popup.close()
+                print(f"已关闭弹出页面: {popup.url}")
+            except Exception as e:
+                print(f"关闭 popup 失败: {e}")
+
+        # 4. 获取建议的文件名（可选）
+        suggested_filename = await download.suggested_filename()
+        if not suggested_filename:
+            suggested_filename = os.path.basename(urlparse(download.page.url).path) or uuid.uuid4().hex
+        print(f"下载文件名: {suggested_filename}")
+        # 5. 保存文件
+        if save_path is None:
+            save_path = os.getcwd()  # 或使用临时目录
+        file_path = os.path.join(save_path, suggested_filename)
+        await download.save_as(file_path)
+        print(f"文件已保存至: {file_path}")
+        return save_path
+    except Exception as e:
+        print(f"click_download error: {e}")
+    finally:
+        # 移除监听器（避免内存泄漏）
+        page.remove_listener("popup", handle_popup)
     return None
