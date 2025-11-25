@@ -75,8 +75,14 @@ async def download_media_by_requests(page, url: str, save_dir: str = "./media"):
     # 获取当前上下文 cookies
     storage = await page.context.storage_state()
     cookies = {c["name"]: c["value"] for c in storage["cookies"]}
-    
-    resp = requests.get(url, cookies=cookies, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
+    # 2. 【可选】只保留目标域名相关的 cookies
+    target_netloc = urlparse(url).netloc
+    filtered_cookies = {}
+    for c in storage["cookies"]:
+        if target_netloc.endswith(c["domain"].lstrip(".")):
+            filtered_cookies[c["name"]] = c["value"]    
+
+    resp = requests.get(url, cookies=cookies=filtered_cookies or cookies, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
     resp.raise_for_status()
     
     filename = os.path.basename(urlparse(url).path) or "media.bin"
