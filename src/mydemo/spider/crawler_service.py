@@ -109,7 +109,12 @@ class AbstractApiClient(ABC):
     def __init__(self):
         self.cookie_dict = None
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
 
     async def update_cookies(self, browser_context: BrowserContext, index_url: str = None):
         if browser_context is None:
@@ -141,8 +146,8 @@ class AbstractApiClient(ABC):
         params = params or {}
         data = data or {}
         json = json or None  # 显式允许 None
-        cookies = cookies or {}
-        headers = headers or {}
+        cookies = cookies or self.cookie_dict
+        headers = headers or self.headers
 
         async with httpx.AsyncClient(cookies=cookies, headers=headers, timeout=timeout,
                                      follow_redirects=follow_redirects, **kwargs) as client:
@@ -154,6 +159,7 @@ class AbstractApiClient(ABC):
             url: str,
             *,
             params: Optional[Dict[str, Any]] = None,
+            cookies: Optional[Dict[str, str]] = None,
             headers: Optional[Dict[str, str]] = None,
             timeout: float = 30.0,
             follow_redirects: bool = True,
@@ -174,8 +180,8 @@ class AbstractApiClient(ABC):
             httpx.Response 对象
         """
         params = params or {}
-        cookies = self.cookie_dict or {}
-        headers = headers or {}
+        cookies = cookies or self.cookie_dict
+        headers = headers or self.headers
 
         async with httpx.AsyncClient(
                 cookies=cookies,

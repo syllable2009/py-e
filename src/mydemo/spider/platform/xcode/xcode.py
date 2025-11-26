@@ -32,13 +32,16 @@ class XCodeCrawler(AbstractCrawler):
             chromium = playwright.chromium
             self.browser_context = await self.launch_browser(chromium, playwright_proxy_format, self.user_agent,
                                                              headless=False)
-            # 获取当前脚本所在目录
-            current_dir = os.getcwd()
-            # 获取上上层目录
-            upper_upper_dir = Path(current_dir).parent
-            print(f"upper_upper_dir={upper_upper_dir}")
+            # 表示 Python 进程启动时所在的“工作目录”，不一定是脚本所在的目路
+            # current_dir = os.getcwd()
+            # print(f"current_dir={current_dir}")
+            # 获取上层目录
+            # upper_upper_dir = Path(current_dir)
+            # 返回当前脚本的路径
+            script_dir = Path(__file__).parent.parent.parent.resolve()
+            print(f"script_dir={script_dir},type:{type(script_dir)}")
             # 路径拼接不能加/，否则为绝对地址
-            join = os.path.join(upper_upper_dir, "spider/libs/stealth.min.js")
+            join = os.path.join(script_dir, "libs/stealth.min.js")
             await self.browser_context.add_init_script(path=join)
             # 打开一个新页面
             self.context_page = await self.browser_context.new_page()
@@ -47,8 +50,7 @@ class XCodeCrawler(AbstractCrawler):
             # 创建client，client封装了requests的操作
             await self.create_client(httpx_proxy_format)
             # 将浏览器cookies的刷新到client
-            context_ = await self.client.update_cookies(self.browser_context, self.index_url)
-            print(f"context:{context_}")
+            await self.client.update_cookies(self.browser_context, self.index_url)
             # 判断是否登录
             if not await self.login_state():
                 # 登录，构建一个Login对象，执行登录操作
@@ -191,7 +193,6 @@ class XCodeCrawler(AbstractCrawler):
     async def login_state(self):
         params = {"action": "wpcom_is_login"}
         response = await self.client.get_user_info(params)
-        print(f"response:{response}")
         loads = json.loads(response.text)
         return loads["result"] == 0
 
