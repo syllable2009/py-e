@@ -6,7 +6,7 @@ from typing import Optional, Dict
 
 from playwright.async_api import BrowserType, BrowserContext, async_playwright, expect
 
-from mydemo.spider.crawler_service import AbstractCrawler
+from mydemo.spider.crawler_service import AbstractCrawler, AbstractApiClient
 from mydemo.spider.platform.xcode import config
 from mydemo.spider.platform.xcode.client import XCodeClient
 from mydemo.utils.page_util import *
@@ -20,7 +20,7 @@ class XCodeCrawler(AbstractCrawler):
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
         # self._page_extractor = TieBaExtractor()
         self.cdp_manager = None
-        self.client = None
+        self.client: AbstractApiClient = None
 
     async def start(self):
         """
@@ -40,21 +40,23 @@ class XCodeCrawler(AbstractCrawler):
             # 路径拼接不能加/，否则为绝对地址
             join = os.path.join(upper_upper_dir, "spider/libs/stealth.min.js")
             await self.browser_context.add_init_script(path=join)
-
+            # 打开一个新页面
             self.context_page = await self.browser_context.new_page()
+            # 路由到首页
             await self.context_page.goto(self.index_url)
             # 创建client，client封装了requests的操作
             await self.create_client(httpx_proxy_format)
             # 将浏览器cookies的刷新到client
-            await self.client.update_cookies(self.browser_context)
+            context_ = await self.client.update_cookies(self.browser_context, self.index_url)
+            print(f"context:{context_}")
             # 判断是否登录
-            if not await self.loggedIn():
+            if not await self.login_state():
                 # 登录，构建一个Login对象，执行登录操作
                 # 登录
                 await self.login()
                 await self.client.update_cookies(self.browser_context)
                 # 在检测
-                logged_in = await self.loggedIn()
+                logged_in = await self.login_state()
                 if logged_in:
                     print(f"首次登录成功")
                 else:
@@ -166,6 +168,7 @@ class XCodeCrawler(AbstractCrawler):
 
         pass
 
+    # 通过页面登录
     async def _login(self):
         page = self.context_page
         await page.get_by_role("link", name="登录").click()
@@ -184,9 +187,11 @@ class XCodeCrawler(AbstractCrawler):
         except Exception as e:
             raise e
 
-    async def loggedIn(self):
+    # 判断是否登录
+    async def login_state(self):
         params = {"action": "wpcom_is_login"}
         response = await self.client.get_user_info(params)
+        print(f"response:{response}")
         loads = json.loads(response.text)
         return loads["result"] == 0
 
