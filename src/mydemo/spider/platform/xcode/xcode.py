@@ -45,15 +45,26 @@ class XCodeCrawler(AbstractCrawler):
             await self.context_page.goto(self.index_url)
             # 创建client，client封装了requests的操作
             await self.create_client(httpx_proxy_format)
+            # 将浏览器cookies的刷新到client
+            await self.client.update_cookies(self.browser_context)
             # 判断是否登录
             if not await self.loggedIn():
                 # 登录，构建一个Login对象，执行登录操作
+                # 登录
                 await self.login()
+                await self.client.update_cookies(self.browser_context)
+                # 在检测
+                logged_in = await self.loggedIn()
+                if logged_in:
+                    print(f"首次登录成功")
+                else:
+                    print(f"首次登录失败")
+                    return
                 # 更新cookie
+            else:
+                print(f"检测到已经是登录状态")
+
             if 1 == 1:
-                logged_in = self.loggedIn()
-                await logged_in
-                print(logged_in)
                 return
             tab = await open_link_in_new_tab(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')
             if tab is None:
@@ -175,16 +186,7 @@ class XCodeCrawler(AbstractCrawler):
 
     async def loggedIn(self):
         params = {"action": "wpcom_is_login"}
-        storage = await self.browser_context.storage_state()
-        # cookies = {c["name"]: c["value"] for c in storage["cookies"]}
-        target_netloc = urlparse(self.index_url).netloc
-        filtered_cookies = {}
-        for c in storage["cookies"]:
-            if target_netloc.endswith(c["domain"].lstrip(".")):
-                filtered_cookies[c["name"]] = c["value"]
-        print(f"self.client={self.client}")
-        response = await self.client.get_user_info(params, filtered_cookies)
-
+        response = await self.client.get_user_info(params)
         loads = json.loads(response.text)
         return loads["result"] == 0
 
