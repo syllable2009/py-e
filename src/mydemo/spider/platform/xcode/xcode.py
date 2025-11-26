@@ -41,8 +41,8 @@ class XCodeCrawler(AbstractCrawler):
             script_dir = Path(__file__).parent.parent.parent.resolve()
             print(f"script_dir={script_dir},type:{type(script_dir)}")
             # 路径拼接不能加/，否则为绝对地址
-            join = os.path.join(script_dir, "libs/stealth.min.js")
-            await self.browser_context.add_init_script(path=join)
+            script_path = os.path.join(script_dir, "libs/stealth.min.js")
+            await self.browser_context.add_init_script(path=script_path)
             # 打开一个新页面
             self.context_page = await self.browser_context.new_page()
             # 路由到首页
@@ -212,3 +212,8 @@ class XCodeCrawler(AbstractCrawler):
             channel="chrome",  # 使用系统的Chrome稳定版
         )
         return browser_context
+
+    async def task_1(self):
+        # 从首页解析列表
+        # 遍历列表，解析每个页
+        pass
