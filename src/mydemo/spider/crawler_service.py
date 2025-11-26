@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
-
+import httpx
 from playwright.async_api import BrowserContext, BrowserType, Playwright
 
 ### 服务接口定义
@@ -107,3 +107,8 @@ class AbstractApiClient(ABC):
     @abstractmethod
     async def update_cookies(self, browser_context: BrowserContext):
         pass
+
+    async def post(self, url, params={}, cookie_dict={}, timeout=30.0, **kwargs):
+        async with httpx.AsyncClient(cookies=cookie_dict, timeout=timeout) as client:
+            response = await client.post(url, params=params, timeout=timeout)
+            return response

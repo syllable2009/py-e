@@ -109,4 +109,15 @@ async def download_via_form(page, submit_btn: str):
     download = await dl_info.value
     await download.save_as("./export.xlsx")
 
+# locator
+page.get_by_role("link", name=re.compile(r"亚⭐️太", re.IGNORECASE)).click()
+page.get_by_text("亚⭐️太", exact=False).click()
+
+推荐使用优先级（从高到低）
+getByTestId() —— 最稳定，需团队约定
+getByRole() / getByLabel() —— 语义化、可访问性友好
+getByText() —— 用户视角，直观
+CSS 选择器（带稳定 class/id） —— 快速但需谨慎
+XPath / 复杂组合 —— 仅作为兜底方案
+
 

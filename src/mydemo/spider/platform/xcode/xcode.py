@@ -1,18 +1,22 @@
 import asyncio
+import json
 import os
 from pathlib import Path
 from typing import Optional, Dict
 
-from playwright.async_api import BrowserType, BrowserContext, async_playwright
+from playwright.async_api import BrowserType, BrowserContext, async_playwright, expect
 
 from mydemo.spider.crawler_service import AbstractCrawler
 from mydemo.spider.platform.xcode import config
+from mydemo.spider.platform.xcode.client import XCodeClient
 from mydemo.utils.page_util import *
+
 
 class XCodeCrawler(AbstractCrawler):
 
     def __init__(self) -> None:
-        self.index_url = "http://www.52im.net/"
+        # self.index_url = "http://www.52im.net/"
+        self.index_url = "https://www.yxzhi.com/"
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
         # self._page_extractor = TieBaExtractor()
         self.cdp_manager = None
@@ -40,12 +44,17 @@ class XCodeCrawler(AbstractCrawler):
             self.context_page = await self.browser_context.new_page()
             await self.context_page.goto(self.index_url)
             # 创建client，client封装了requests的操作
-            self.client = None
+            await self.create_client(httpx_proxy_format)
             # 判断是否登录
             if not await self.loggedIn():
                 # 登录，构建一个Login对象，执行登录操作
-                pass
+                await self.login()
                 # 更新cookie
+            if 1 == 1:
+                logged_in = self.loggedIn()
+                await logged_in
+                print(logged_in)
+                return
             tab = await open_link_in_new_tab(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')
             if tab is None:
                 return
@@ -53,16 +62,19 @@ class XCodeCrawler(AbstractCrawler):
             await asyncio.sleep(3)
             # 模拟处理业务
             xpath = "//*[@id='ID_bbs_subjects_p1']/li/a[2]"
-            links = await page_analyze_link_by_xpath(tab,xpath)
+            links = await page_analyze_link_by_xpath(tab, xpath)
             print(f"links={links}")
             await tab.close()
             # 当前页面提到前台
             await self.context_page.bring_to_front()
-            await self.context_page.goto(url="https://www.21voa.com/special_english/wilbur-and-orville-wright-the-first-airplane-93397.html",wait_until="networkidle")
+            await self.context_page.goto(
+                url="https://www.21voa.com/special_english/wilbur-and-orville-wright-the-first-airplane-93397.html",
+                wait_until="networkidle")
 
-            link_locator = self.context_page.locator("xpath=/html/body/div[4]/div[2]/div[3]/div[2]/div/div[1]/div[4]/div[3]/div/a[1]")
+            link_locator = self.context_page.locator(
+                "xpath=/html/body/div[4]/div[2]/div[3]/div[2]/div/div[1]/div[4]/div[3]/div/a[1]")
             await link_locator.wait_for(state="visible")
-            await click_download(self.context_page, link_locator,save_path=None)
+            await click_download(self.context_page, link_locator, save_path=None)
             await asyncio.sleep(3)
             if 1 == 1:
                 return
@@ -98,6 +110,9 @@ class XCodeCrawler(AbstractCrawler):
             # 回退到上一页
 
             # 解析
+
+    async def create_client(self, httpx_proxy_format):
+        self.client = XCodeClient()
 
     async def safe_click_link(self, text: str, timeout: float = 10000):
         """
@@ -140,8 +155,38 @@ class XCodeCrawler(AbstractCrawler):
 
         pass
 
+    async def _login(self):
+        page = self.context_page
+        await page.get_by_role("link", name="登录").click()
+        print(f"start login")
+        # await page.wait_for_selector('#user-avatar', state='visible')
+        await expect(page.get_by_text("Just", exact=True)).to_be_visible(timeout=30000)
+
+    async def login(self):
+        try:
+            # 设置总超时时间为 20 秒
+            await asyncio.wait_for(self._login(), timeout=20.0)
+            print("Login completed successfully.")
+        except asyncio.TimeoutError:
+            # 只有真正超时才报这个错
+            raise Exception("Login process timed out after 20 seconds.")
+        except Exception as e:
+            raise e
+
     async def loggedIn(self):
-        return False
+        params = {"action": "wpcom_is_login"}
+        storage = await self.browser_context.storage_state()
+        # cookies = {c["name"]: c["value"] for c in storage["cookies"]}
+        target_netloc = urlparse(self.index_url).netloc
+        filtered_cookies = {}
+        for c in storage["cookies"]:
+            if target_netloc.endswith(c["domain"].lstrip(".")):
+                filtered_cookies[c["name"]] = c["value"]
+        print(f"self.client={self.client}")
+        response = await self.client.get_user_info(params, filtered_cookies)
+
+        loads = json.loads(response.text)
+        return loads["result"] == 0
 
     async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict], user_agent: Optional[str],
                              headless: bool = True) -> BrowserContext:
