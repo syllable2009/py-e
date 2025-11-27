@@ -10,6 +10,7 @@ from mydemo.spider.crawler_service import AbstractCrawler, AbstractApiClient
 from mydemo.spider.platform.xcode import config
 from mydemo.spider.platform.xcode.client import XCodeClient
 from mydemo.utils.page_util import *
+from mydemo.utils.playwright_util import open_url_on_current_page, parse_list_element, parse_element, get_full_url
 
 
 class XCodeCrawler(AbstractCrawler):
@@ -68,6 +69,19 @@ class XCodeCrawler(AbstractCrawler):
             else:
                 print(f"检测到已经是登录状态")
 
+            # 在当前页打开电脑
+            page: Page = await open_url_on_current_page(self.context_page, url=self.index_url,
+                                                        locator=self.context_page.get_by_text(
+                                                            "电脑",exact=True))
+            await asyncio.sleep(3)
+
+            element_list = await parse_list_element(
+                page.locator('xpath=//*[@id="wrap"]/div[1]/main/section[2]/div[2]/ul[1]/li/div[2]/h3/a'))
+            print(f"{element_list}")
+            elements = await parse_element(element_list)
+            print(f"{elements}")
+            for e in elements:
+                print(f"{get_full_url(self.index_url, e)}")
             if 1 == 1:
                 return
             tab = await open_link_in_new_tab(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')

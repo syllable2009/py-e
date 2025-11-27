@@ -1,7 +1,7 @@
 import asyncio
+from urllib.parse import urljoin
 
 from playwright.async_api import Page, expect, Locator, async_playwright
-
 
 # 监听 popup 事件，自动关闭
 async def on_close_popup(popup_page):
@@ -48,6 +48,64 @@ async def open_url_on_new_page(page: Page, url: str, locator: Locator, timeout: 
     except asyncio.TimeoutError:
         raise Exception(f"open_url_on_new_page no popup appeared within {timeout} ms after clicking the element.")
 
+
+# 只提取页面的元素，需要自行解析元素的属性["href", "src", "alt", "title"]
+async def parse_list_element(locator: Locator, timeout: float = 30000):
+    # 等待至少一个元素出现（避免空列表导致误判成功）
+    try:
+        await expect(locator.first).to_be_visible(timeout=timeout)
+    except Exception as e:
+        raise RuntimeError(f"Failed to find any element matching locator within {timeout}ms: {e}")
+
+        # 获取所有匹配的元素数量
+    count = await locator.count()
+    # all_ = await locator.all()
+    # print(f"{all_}")
+    if count == 0:
+        return []
+    return [locator.nth(i) for i in range(count)]
+
+# 只提取页面的第一个元素，需要自行解析元素的属性["href", "src", "alt", "title"]
+async def parse_one_element(locator: Locator, timeout: float = 30000):
+    # 等待至少一个元素出现（避免空列表导致误判成功）
+    try:
+        await expect(locator.first).to_be_visible(timeout=timeout)
+    except Exception as e:
+        raise RuntimeError(f"Failed to find any element matching locator within {timeout}ms: {e}")
+    return locator.first
+
+#  解析匹配出来的元素列表
+async def parse_element(elements: list[Locator]) -> list[str]:
+    result = []
+    if not elements or len(elements) == 0:
+        return result
+    for e in elements:
+        role = await e.get_attribute("role")
+        tag = await e.evaluate("e => e.tagName.toLowerCase()")
+        print(f"parse_element tag:{tag},role:{role}")
+        extract = None
+        if tag == "div":
+            pass
+        elif tag == "a":  # a标签
+            extract = "href"
+        elif tag == "link":
+            extract = "href"
+        elif tag == "img":
+            extract = "src"
+        else:
+            pass
+        if not extract:
+            continue
+        attribute = await e.get_attribute(extract)
+        if attribute:
+            result.append(attribute)
+    return result
+
+
+def get_full_url(base_url, raw_url):
+    return urljoin(base_url, raw_url)
+
+### 以下部分为测试代码
 
 async def t_open_url_on_current_page():
     async with async_playwright() as p:
