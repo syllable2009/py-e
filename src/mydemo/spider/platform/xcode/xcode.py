@@ -215,5 +215,8 @@ class XCodeCrawler(AbstractCrawler):
 
     async def task_1(self):
         # 从首页解析列表
+        self.context_page.goto()
+        # 返回上一页
+        # await self.context_page.go_back()
         # 遍历列表，解析每个页
         pass

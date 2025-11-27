@@ -120,4 +120,6 @@ getByText() —— 用户视角，直观
 CSS 选择器（带稳定 class/id） —— 快速但需谨慎
 XPath / 复杂组合 —— 仅作为兜底方案
 
-
+# 在 Playwright 中，Locators（定位器） 和 Selectors（选择器）
+Selectors 是字符串表达式（“怎么找”）
+Locator = Selector + 智能等待 + 可操作 API
