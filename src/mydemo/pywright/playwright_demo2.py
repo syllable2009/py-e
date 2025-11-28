@@ -1,7 +1,7 @@
 import uuid
 import requests
 from mydemo.pywright.chrome_util import ChromeBrowser
-from mydemo.utils.content_type_util import infer_file_type, infer_file_name
+from mydemo.utils.content_type_util import infer_file_name
 from mydemo.utils.download_util import save_bytes
 import os
 from urllib.parse import urlparse, urljoin

@@ -58,9 +58,6 @@ def infer_file_name(url: str = None, content_type: str = None) -> str:
                 file_name = "".join(c for c in name if c.isalnum() or c in "._-")
             if not file_ext and ext:
                 file_ext = ext.lower()
-        else:
-            file_ext = infer_file_type(content_type)
-
     if not file_name:
         file_name = uuid.uuid4().hex
     if not file_ext:
