@@ -10,7 +10,6 @@ from mydemo.spider.crawler_service import AbstractCrawler, AbstractApiClient
 from mydemo.spider.platform.xcode import config
 from mydemo.spider.platform.xcode.client import XCodeClient
 from mydemo.utils.page_util import *
-from mydemo.utils.playwright_util import open_url_on_current_page, parse_list_element, parse_element, get_full_url
 
 
 class XCodeCrawler(AbstractCrawler):
@@ -72,7 +71,7 @@ class XCodeCrawler(AbstractCrawler):
             # 在当前页打开电脑
             page: Page = await open_url_on_current_page(self.context_page, url=self.index_url,
                                                         locator=self.context_page.get_by_text(
-                                                            "电脑",exact=True))
+                                                            "电脑", exact=True))
             await asyncio.sleep(3)
 
             element_list = await parse_list_element(
@@ -84,14 +83,14 @@ class XCodeCrawler(AbstractCrawler):
                 print(f"{get_full_url(self.index_url, e)}")
             if 1 == 1:
                 return
-            tab = await open_link_in_new_tab(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')
+            tab = await open_url_on_new_page(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')
             if tab is None:
                 return
             await tab.bring_to_front()
             await asyncio.sleep(3)
             # 模拟处理业务
             xpath = "//*[@id='ID_bbs_subjects_p1']/li/a[2]"
-            links = await page_analyze_link_by_xpath(tab, xpath)
+            links = await parse_one_element(tab, tab.locator(f"xpath={xpath}"))
             print(f"links={links}")
             await tab.close()
             # 当前页面提到前台
@@ -103,7 +102,7 @@ class XCodeCrawler(AbstractCrawler):
             link_locator = self.context_page.locator(
                 "xpath=/html/body/div[4]/div[2]/div[3]/div[2]/div/div[1]/div[4]/div[3]/div/a[1]")
             await link_locator.wait_for(state="visible")
-            await click_download(self.context_page, link_locator, save_path=None)
+            # await click_download(self.context_page, link_locator, save_path=None)
             await asyncio.sleep(3)
             if 1 == 1:
                 return

@@ -3,8 +3,8 @@ import os
 from playwright.async_api import BrowserType, BrowserContext, Playwright, async_playwright
 
 from mydemo.spider.cdp_browser import CDPBrowserManager
-from mydemo.spider.crawler_service import AbstractCrawler, AbstractApiClient
-from mydemo.spider.http_util import convert_cookies
+from mydemo.spider.crawler_service import AbstractCrawler
+from mydemo.utils.http_util import convert_cookies
 from mydemo.spider.platform.xiaohongshu import config
 from mydemo.spider.platform.xiaohongshu.client import XiaoHongShuClient
 

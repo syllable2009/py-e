@@ -1,152 +1,166 @@
-import uuid
+import asyncio
+from urllib.parse import urljoin
 
-from playwright.async_api import Page, Download
-import os
-from urllib.parse import urljoin, urlparse
-import datetime
+from playwright.async_api import Page, expect, Locator, async_playwright
 
 
-# xpath解析页面的链接
-async def page_analyze_link_by_xpath(page: Page, xpath: str, timeout: float = 10000):
+### 适用于playwright的page_util
+
+
+# 监听 popup 事件，自动关闭
+async def on_close_popup(popup_page):
+    # 可选：记录日志或做其他处理
+    print(f"on_close_popup, closing: {popup_page.url}")
+    await popup_page.close()
+
+
+# 在当前页面打开url，如果有弹出的页面关闭
+async def open_url_on_current_page(page: Page, url: str, locator: Locator, timeout: float = 30000):
+    page.on("popup", on_close_popup)
+    await page.goto(url)
     try:
-        link_elements = page.locator(f"xpath={xpath} >> visible=true")
-        # 等待至少有一个匹配的元素被添加到页面
-        await link_elements.first.wait_for(state="visible", timeout=timeout)
-        # 获取元素总数
-        count = await link_elements.count()
-        hrefs = []
-        for i in range(min(count, 500)):  # 防止无限循环（安全上限）
-            href = await link_elements.nth(i).get_attribute("href")
-            if href and href.strip():
-                hrefs.append(href.strip())
-        # 转为绝对 URL（可选但推荐）
-        from urllib.parse import urljoin
-        base_url = page.url
-        from urllib.parse import urljoin
-        absolute_urls = [urljoin(base_url, h) for h in hrefs]
-        # 去重并保持顺序
-        return list(dict.fromkeys(absolute_urls))
+        # 等待元素出现
+        await expect(locator).to_be_visible(timeout=30000)
+        # 点击元素
+        await locator.click()
+        return page
     except Exception as e:
-        print(f"page_analyze_link_by_xpath error: {e}")
-    return []
-
-
-# 模拟右键在新页面打开链接
-async def open_link_in_new_tab(page: Page, text: str, timeout: float = 10000):
-    """
-    强制在新标签页中打开包含指定文本的链接（模拟右键 -> 在新标签页中打开）
-
-    :param page: 当前页面对象
-    :param text: 链接中包含的可见文本
-    :param timeout: 超时时间（毫秒）
-    :return: 新页面对象，失败返回 None
-    """
-    try:
-        # 1. 定位链接
-        link = page.locator(f'a:has-text("{text}")')
-        # 2. 等待链接可见
-        await link.wait_for(state="visible", timeout=timeout)
-        # target = await link.get_attribute('target')
-
-        count = await link.count()
-        if count == 0:
-            raise ValueError(f"未找到包含文本 '{text}' 的链接")
-        elif count > 1:
-            print(f"找到 {count} 个匹配链接，将使用第一个")
-            link = link.first
-
-        # 3. 获取 href
-        href = await link.get_attribute('href')
-        if not href or not href.strip():
-            raise ValueError(f"链接文本 '{text}' 对应的 href 为空或不存在")
-
-        # 4. 创建新页面（新标签页）
-        new_page = await page.context.new_page()
-
-        # 5. 在新页面中打开链接，并设置超时
-        await new_page.goto(href, timeout=timeout)
-        await new_page.wait_for_load_state('networkidle', timeout=timeout)
-
-        return new_page
-
-    except TimeoutError:
-        print(f"open_link_in_new_tab timeout: 超时 {timeout}ms 内未完成操作")
-    except Exception as e:
-        print(f"open_link_in_new_tab error: {e}")
-    return None
-
-
-# 点击打开新页面下载
-async def click_new_page_download():
-    pass
-
-
-# 通过导航到下载链接触发下载（适用于直接文件链接）
-async def download_link(page: Page, url: str, save_path: str = None):
-    # 通过导航到下载链接触发下载（适用于直接文件链接）
-    async with page.expect_download(timeout=30000) as download_info:
-        await page.goto(url, wait_until="domcontentloaded")
-    download: Download = await download_info.value
-    suggested_filename = await download.suggested_filename()
-    if not suggested_filename:
-        suggested_filename = os.path.basename(urlparse(url).path) or uuid.uuid4().hex
-    # 5. 保存文件
-    if save_path is None:
-        save_path = os.getcwd()  # 或使用临时目录
-    file_path = os.path.join(save_path, suggested_filename)
-    await download.save_as(file_path)
-    print(f"文件已保存至: {file_path}")
-
-
-# 点击触发下载
-async def click_download(page: Page, selector: str, save_path: str = None):
-    """
-    点击按钮并处理下载
-
-    :param page: 当前页面
-    :param button_selector: 按钮的选择器（如 'button#download-btn'）
-    :param save_path: 保存路径（如 './books/tcpip.pdf'），若为 None 则返回临时路径
-    :return: 下载文件的完整路径
-    """
-    popups = []  # 用于收集弹出页面
-
-    def handle_popup(popup_page):
-        popups.append(popup_page)
-
-    # 监听 popup 事件
-    page.on("popup", handle_popup)
-
-    try:
-        # 1. 监听 download 事件
-        async with page.expect_download() as download_info:
-            # 2. 点击按钮（触发下载） await page.click(link_locator)
-            await selector.click()
-        # 3. 获取 download 对象
-        download: Download = await download_info.value
-
-        # 关闭所有弹出页面
-        for popup in popups:
-            try:
-                await popup.close()
-                print(f"已关闭弹出页面: {popup.url}")
-            except Exception as e:
-                print(f"关闭 popup 失败: {e}")
-
-        # 4. 获取建议的文件名（可选）
-        suggested_filename = await download.suggested_filename()
-        if not suggested_filename:
-            suggested_filename = os.path.basename(urlparse(download.page.url).path) or uuid.uuid4().hex
-        print(f"下载文件名: {suggested_filename}")
-        # 5. 保存文件
-        if save_path is None:
-            save_path = os.getcwd()  # 或使用临时目录
-        file_path = os.path.join(save_path, suggested_filename)
-        await download.save_as(file_path)
-        print(f"文件已保存至: {file_path}")
-        return save_path
-    except Exception as e:
-        print(f"click_download error: {e}")
+        raise Exception(f"open_url_on_current_page target element did not visible within {timeout} ms: {e}")
     finally:
-        # 移除监听器（避免内存泄漏）
-        page.remove_listener("popup", handle_popup)
-    return None
+        # 清理监听器（避免内存泄漏）
+        page.remove_listener("popup", on_close_popup)
+
+
+# 在新的页面打开url，当前页面不关闭，新页面提到前台，返回新的页面
+async def open_url_on_new_page(page: Page, url: str, locator: Locator, timeout: float = 30000) -> Page:
+    await page.goto(url)
+    # 等待目标元素可见
+    try:
+        await expect(locator).to_be_visible(timeout=timeout)
+    except Exception as e:
+        raise Exception(f"open_url_on_new_page target element did not visible within {timeout} ms: {e}")
+
+    # 准备等待 popup 事件
+    popup_event = page.wait_for_event("popup", timeout=timeout)
+
+    # 点击元素（应触发 popup）
+    await locator.click()
+    # 等待并获取 popup 页面
+    try:
+        popup_page = await popup_event
+        return popup_page
+    except asyncio.TimeoutError:
+        raise Exception(f"open_url_on_new_page no popup appeared within {timeout} ms after clicking the element.")
+
+
+# 只提取页面的元素，需要自行解析元素的属性["href", "src", "alt", "title"]
+async def parse_list_element(locator: Locator, timeout: float = 30000):
+    # 等待至少一个元素出现（避免空列表导致误判成功）
+    try:
+        await expect(locator.first).to_be_visible(timeout=timeout)
+    except Exception as e:
+        raise RuntimeError(f"Failed to find any element matching locator within {timeout}ms: {e}")
+
+        # 获取所有匹配的元素数量
+    count = await locator.count()
+    # all_ = await locator.all()
+    # print(f"{all_}")
+    if count == 0:
+        return []
+    return [locator.nth(i) for i in range(count)]
+
+
+# 只提取页面的第一个元素，需要自行解析元素的属性["href", "src", "alt", "title"]
+async def parse_one_element(locator: Locator, timeout: float = 30000):
+    # 等待至少一个元素出现（避免空列表导致误判成功）
+    try:
+        await expect(locator.first).to_be_visible(timeout=timeout)
+    except Exception as e:
+        raise RuntimeError(f"Failed to find any element matching locator within {timeout}ms: {e}")
+    return locator.first
+
+
+#  解析匹配出来的元素列表
+async def parse_element(elements: list[Locator]) -> list[str]:
+    result = []
+    if not elements or len(elements) == 0:
+        return result
+    for e in elements:
+        role = await e.get_attribute("role")
+        tag = await e.evaluate("e => e.tagName.toLowerCase()")
+        print(f"parse_element tag:{tag},role:{role}")
+        extract = None
+        if tag == "div":
+            pass
+        elif tag == "a":  # a标签
+            extract = "href"
+        elif tag == "link":
+            extract = "href"
+        elif tag == "img":
+            extract = "src"
+        else:
+            pass
+        if not extract:
+            continue
+        attribute = await e.get_attribute(extract)
+        if attribute:
+            result.append(attribute)
+    return result
+
+
+def get_full_url(base_url, raw_url):
+    return urljoin(base_url, raw_url)
+
+
+### 以下部分为测试代码
+
+async def t_open_url_on_current_page():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        page = await browser.new_page()
+
+        # 假设有一个按钮点击后会 window.open()
+        button_locator = page.get_by_text("电脑", exact=True).first
+
+        try:
+            popup = await open_url_on_current_page(
+                page=page,
+                url="https://www.yxzhi.com/",
+                locator=button_locator,
+                timeout=10000
+            )
+            print("Popup URL:", popup.url)
+            await asyncio.sleep(5)
+            await popup.close()
+        except Exception as e:
+            print("Error:", e)
+        await browser.close()
+
+
+async def t_open_url_on_new_page():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        page = await browser.new_page()
+
+        # 假设有一个按钮点击后会 window.open()
+        button_locator = page.get_by_text("卸载工具", exact=False).first
+
+        try:
+            popup = await open_url_on_new_page(
+                page=page,
+                url="https://www.yxzhi.com/windows",
+                locator=button_locator,
+                timeout=10000
+            )
+            print("Popup URL:", popup.url)
+            await asyncio.sleep(5)
+            await popup.close()
+        except Exception as e:
+            print("Error:", e)
+        await browser.close()
+
+
+if __name__ == "__main__":
+    # 运行
+    asyncio.run(t_open_url_on_current_page())
+    asyncio.run(t_open_url_on_new_page())
