@@ -1,7 +1,7 @@
 import asyncio
 from urllib.parse import urljoin
 
-from playwright.async_api import Page, expect, Locator, async_playwright
+from playwright.async_api import Page, expect, Locator, async_playwright, BrowserContext
 
 
 ### 适用于playwright的page_util
@@ -51,6 +51,108 @@ async def open_url_on_new_page(page: Page, url: str, locator: Locator, timeout: 
         return popup_page
     except asyncio.TimeoutError:
         raise Exception(f"open_url_on_new_page no popup appeared within {timeout} ms after clicking the element.")
+
+
+# 在当前页面查找元素，然后填充，否则超时报错
+async def on_page_fill(page: Page, selector: str, value: str, timeout: float = 30000) -> Page:
+    try:
+        print(f"on_page_fill:{value}")
+        # 等待元素出现在 DOM 中且可交互（推荐使用 "visible" 状态以确保可操作）
+        await page.wait_for_selector(selector, state="visible", timeout=timeout)
+
+        # 使用 fill() 方法：先清空再输入，适用于 <input> / <textarea>
+        await page.fill(selector, value, timeout=timeout)
+
+    except asyncio.TimeoutError as e:
+        raise RuntimeError(
+            f"在页面 {page.url} 上等待可填充元素 '{selector}' 超时（{timeout}ms）。"
+            "可能原因：元素不存在、未加载完成、选择器错误，或该元素不可编辑。"
+        ) from e
+    except Exception as e:
+        raise RuntimeError(
+            f"在页面 {page.url} 上向元素 '{selector}' 填充文本 '{value}' 时发生错误: {e}"
+        ) from e
+
+    return page
+
+
+# 在当前页面查找元素点击，否则超时报错
+async def on_page_click(page: Page, selector: str, timeout: float = 30000) -> Page:
+    try:
+        # 等待元素出现在 DOM 中且可交互（visible + stable）
+        await page.wait_for_selector(selector, state="visible", timeout=timeout)
+
+        # 可选：进一步确保元素可见并可点击（避免被遮挡）
+        element = page.locator(selector)
+        # 在操作元素前自动将其滚动到可视区域内（如果尚未可见），从而避免因元素被遮挡或位于视窗外而导致的点击/填充失败。
+        await element.scroll_into_view_if_needed(timeout=timeout)
+        await element.click(timeout=timeout)
+
+    except asyncio.TimeoutError as e:
+        raise RuntimeError(
+            f"在页面 {page.url} 上等待元素 '{selector}' 超时（{timeout}ms）。"
+            "可能原因：页面未加载完成、选择器错误、元素动态延迟渲染等。"
+        ) from e
+    except Exception as e:
+        raise RuntimeError(
+            f"在页面 {page.url} 上点击元素 '{selector}' 时发生错误: {e}"
+        ) from e
+    return page
+
+
+# 在当前页面查找元素点击弹出并返回新页面，否则超时报错
+async def on_page_click_new_page(
+        page: Page,
+        url: str,
+        selector: str,
+        timeout: float = 30000
+) -> Page:
+    context: BrowserContext = page.context
+    try:
+        # 等待元素可见
+        await page.wait_for_selector(selector, state="visible", timeout=timeout)
+
+        # 监听新页面创建（设置 future 捕获新页面）
+        new_page_future: asyncio.Future[Page] = asyncio.Future()
+
+        def on_page_created(new_page: Page):
+            if not new_page_future.done():
+                new_page_future.set_result(new_page)
+
+        # 注册监听器
+        context.on("page", on_page_created)
+
+        try:
+            # 执行点击
+            element = page.locator(selector)
+            await element.scroll_into_view_if_needed(timeout=timeout)
+
+            # 点击并等待可能的导航或新页面
+            async with page.expect_popup() as popup_info:
+                await element.click(timeout=timeout)
+                # 如果有弹出页面，playwright 会自动捕获
+                new_page = await popup_info.value
+                return new_page
+
+        except asyncio.TimeoutError:
+            # expect_popup 超时，说明没有新页面
+            pass
+        finally:
+            # 移除监听器避免内存泄漏
+            context.remove_listener("page", on_page_created)
+
+        # 如果没有弹出页面，则返回原页面
+        return page
+
+    except asyncio.TimeoutError as e:
+        raise RuntimeError(
+            f"在页面 {url} 上等待元素 '{selector}' 超时（{timeout}ms）。"
+            "可能原因：页面未加载完成、选择器错误、元素动态延迟渲染等。"
+        ) from e
+    except Exception as e:
+        raise RuntimeError(
+            f"在页面 {url} 上点击元素 '{selector}' 时发生错误: {e}"
+        ) from e
 
 
 # 只提取页面的元素，需要自行解析元素的属性["href", "src", "alt", "title"]

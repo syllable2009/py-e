@@ -81,6 +81,11 @@ class XCodeCrawler(AbstractCrawler):
             print(f"{elements}")
             for e in elements:
                 print(f"{get_full_url(self.index_url, e)}")
+            fill_page = await on_page_fill(self.context_page, 'xpath=//*[@id="wrap"]/div[1]/aside/div[1]/form/input[2]',
+                                         "music")
+            await asyncio.sleep(3)
+            click_page = await on_page_click(fill_page, 'xpath=/html/body/div[1]/div[1]/aside/div[1]/form/button')
+            await asyncio.sleep(3)
             if 1 == 1:
                 return
             tab = await open_url_on_new_page(self.context_page, text='[书籍] 网络编程理论经典《TCP/IP详解》在线版')
@@ -103,6 +108,9 @@ class XCodeCrawler(AbstractCrawler):
                 "xpath=/html/body/div[4]/div[2]/div[3]/div[2]/div/div[1]/div[4]/div[3]/div/a[1]")
             await link_locator.wait_for(state="visible")
             # await click_download(self.context_page, link_locator, save_path=None)
+            await asyncio.sleep(3)
+            # 点击输入
+            await on_page_fill(self.context_page, '//*[@id="wrap"]/div[1]/aside/div[1]/form/input[2]', "music")
             await asyncio.sleep(3)
             if 1 == 1:
                 return
