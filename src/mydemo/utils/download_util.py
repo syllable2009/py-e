@@ -44,6 +44,7 @@ async def download_direct_link(page: Page, locator: Locator, save_dir: str = "./
         if listener_added:
             page.remove_listener("popup", on_close_popup)
 
+
 # 场景 2：点击按钮后打开新页面，新页面自动下载或含下载按钮，点击后弹出 _blank 新窗口，自动开始下载，或需再点一次“确认下载”
 async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./downloads"):
     os.makedirs(save_dir, exist_ok=True)
@@ -55,12 +56,9 @@ async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./do
         # 方案 A：新页面自动下载
         async with popup.expect_download(timeout=10000) as download_info:
             await popup.wait_for_load_state("domcontentloaded")
+            # 方案 B：新页面需二次点击（取消上面，启用下面）
+            # await popup.locator("#download-btn").click()
         download = await download_info.value
-
-        # 方案 B：新页面需二次点击（取消上面，启用下面）
-        # async with popup.expect_download() as dl_info:
-        #     await popup.locator("#download-btn").click()
-        # download = await dl_info.value
 
         suggested_name = download.suggested_filename()
         if suggested_name:
@@ -72,7 +70,8 @@ async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./do
         file_path = os.path.join(save_dir, filename)
         await download.save_as(file_path)
         return file_path
-
+    except TimeoutError:
+        print(f"Popup opened but no download triggered: {popup.url}")
     finally:
         # 步骤 5: 确保关闭 popup，释放资源
         try:
@@ -80,6 +79,7 @@ async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./do
         except Exception:
             # 如果 popup 已关闭（如自动关闭），忽略异常
             pass
+
 
 # 场景 3：点击后弹出网页内对话框（非系统级），需选择格式/确认
 
@@ -97,6 +97,7 @@ def _is_cookie_domain_match(cookie_domain: str, url_netloc: str) -> bool:
     if url_netloc.endswith("." + cookie_domain):
         return True
     return False
+
 
 # 从url解析文件名称
 def _get_file_name(url: str, resp) -> str:
@@ -117,6 +118,7 @@ def _get_file_name(url: str, resp) -> str:
         filename = f"{uuid.uuid4().hex}.bin"
     return filename
 
+
 # 场景 4：媒体文件（MP3/图片/PDF）被浏览器预览而非下载
 async def download_media_by_requests(page, url: str, save_dir: str = "./media"):
     # 获取当前上下文 cookies
@@ -132,8 +134,8 @@ async def download_media_by_requests(page, url: str, save_dir: str = "./media"):
     # 获取当前页面的 User-Agent
     user_agent = await page.evaluate("() => navigator.userAgent")
 
-    resp = requests.get(url, cookies=filtered_cookies or {}, headers = {
-        "User-Agent": user_agent}, stream = True)
+    resp = requests.get(url, cookies=filtered_cookies or {}, headers={
+        "User-Agent": user_agent}, stream=True)
     resp.raise_for_status()
 
     filename = os.path.basename(urlparse(url).path) or f"{uuid.uuid4().hex}.bin"
