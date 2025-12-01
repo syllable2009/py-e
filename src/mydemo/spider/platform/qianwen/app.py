@@ -13,6 +13,12 @@ class QianWenCrawler(AbstractCrawler):
         super().__init__()
         self.index_url = "https://www.qianwen.com/chat/"
 
+    async def _login(self):
+        pass
+
+    async def login_state(self):
+        pass
+
     async def do_with_playwright(self):
         # 执行初始化脚本
         script_dir = Path(__file__).parent.parent.parent.resolve()

@@ -21,14 +21,16 @@ class AbstractCrawler(ABC):
         self.cdp_manager = None
         self.client: AbstractApiClient = None
 
-    @abstractmethod
-    async def do_with_playwright(self) -> None:
-        """
-        start crawler
-        """
+    async def do_with_playwright_cdp(self) -> None:
         pass
 
-    async def start(self):
+    async def do_with_playwright(self) -> None:
+        print("I have nothing to do")
+
+    async def start_with_http(self):
+        pass
+
+    async def start_with_playwright(self):
         playwright_proxy_format, httpx_proxy_format = None, None
         async with async_playwright() as playwright:
             self.chromium = playwright.chromium
@@ -44,8 +46,8 @@ class AbstractCrawler(ABC):
         pass
 
     # @abstractmethod
-    async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict], user_agent: Optional[str],
-                             headless: bool = True) -> BrowserContext:
+    async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict], user_agent: Optional[
+        str],headless: bool = True) -> BrowserContext:
         home_path = Path(__file__).parent.resolve()
         user_data_dir = os.path.join(home_path, "browser_data", config.PLATFORM)
         browser_context = await chromium.launch_persistent_context(

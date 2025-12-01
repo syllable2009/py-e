@@ -29,7 +29,8 @@ async def main():
     # 通过静态工厂获取实例
     crawler = SpiderFactory.create_spider_obj(platform=config.PLATFORM)
     print(type(crawler))
-    await crawler.start()
+    await crawler.start_with_playwright()
+    # await crawler.start_with_http()
 
 
 def ask_exit():
