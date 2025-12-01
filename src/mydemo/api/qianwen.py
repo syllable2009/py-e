@@ -1,6 +1,9 @@
 import os
 from openai import OpenAI
 
+#Linux/macOS： export API_KEY="sk-xxxxxxxxxxxxxxxx"
+#window: set API_KEY=sk-xxxxxxxxxxxxxxxx
+
 client = OpenAI(
     api_key=os.getenv("API_KEY"),
     # 以下是北京地域base_url，如果使用新加坡地域的模型，需要将base_url替换为：https://dashscope-intl.aliyuncs.com/compatible-mode/v1
