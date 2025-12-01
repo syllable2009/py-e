@@ -1,5 +1,5 @@
 # 基础配置
-PLATFORM = "xcode"
+PLATFORM = "qianwen"
 
 # 自定义浏览器路径（可选）
 # 如果为空，系统会自动检测Chrome/Edge的安装路径

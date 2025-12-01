@@ -1,42 +1,66 @@
+import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, Optional, Any
 from urllib.parse import urlparse
 
 import httpx
-from playwright.async_api import BrowserContext, BrowserType, Playwright
+from playwright.async_api import BrowserContext, BrowserType, Playwright, async_playwright
 from sympy import false
+
+from mydemo.spider import config
 
 
 ### 服务接口定义
 
 class AbstractCrawler(ABC):
 
+    def __init__(self) -> None:
+        self.index_url = None
+        self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        self.cdp_manager = None
+        self.client: AbstractApiClient = None
+
     @abstractmethod
-    async def start(self):
+    async def do_with_playwright(self) -> None:
         """
         start crawler
         """
         pass
 
-    @abstractmethod
+    async def start(self):
+        playwright_proxy_format, httpx_proxy_format = None, None
+        async with async_playwright() as playwright:
+            self.chromium = playwright.chromium
+            self.browser_context = await self.launch_browser(self.chromium, playwright_proxy_format, self.user_agent,
+                                                             headless=False)
+            await self.do_with_playwright()
+
+    # @abstractmethod
     async def search(self):
         """
         search
         """
         pass
 
-    @abstractmethod
+    # @abstractmethod
     async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict], user_agent: Optional[str],
                              headless: bool = True) -> BrowserContext:
-        """
-        launch browser
-        :param chromium: chromium browser
-        :param playwright_proxy: playwright proxy
-        :param user_agent: user agent
-        :param headless: headless mode
-        :return: browser context
-        """
-        pass
+        home_path = Path(__file__).parent.resolve()
+        user_data_dir = os.path.join(home_path, "browser_data", config.PLATFORM)
+        browser_context = await chromium.launch_persistent_context(
+            user_data_dir=user_data_dir,
+            accept_downloads=True,
+            headless=headless,
+            proxy=playwright_proxy,  # type: ignore
+            viewport={
+                "width": 1920,
+                "height": 1080
+            },
+            user_agent=user_agent or self.user_agent,
+            channel="chrome",  # 使用系统的Chrome稳定版
+        )
+        return browser_context
 
     async def launch_browser_with_cdp(self, playwright: Playwright, playwright_proxy: Optional[Dict],
                                       user_agent: Optional[str], headless: bool = True) -> BrowserContext:

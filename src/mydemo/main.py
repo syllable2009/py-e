@@ -5,8 +5,6 @@ from pydantic import ValidationError
 import traceback
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
 import os
 import asyncio
 

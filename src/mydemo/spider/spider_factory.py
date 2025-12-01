@@ -1,4 +1,5 @@
 from mydemo.spider.platform.bilibili import BilibiliCrawler
+from mydemo.spider.platform.qianwen.app import QianWenCrawler
 from mydemo.spider.platform.tieba.tieba import TiebaShuCrawler
 from mydemo.spider.platform.xcode.xcode import XCodeCrawler
 from mydemo.spider.platform.xiaohongshu.xhs import XiaoHongShuCrawler
@@ -68,6 +69,7 @@ class SpiderFactory(object):
         "xhs": XiaoHongShuCrawler,
         "tieba": TiebaShuCrawler,
         "xcode": XCodeCrawler,
+        "qianwen": QianWenCrawler,
     }
 
     @staticmethod
