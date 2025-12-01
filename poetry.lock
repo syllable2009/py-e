@@ -1470,14 +1470,14 @@ reference = "tuna"
 
 [[package]]
 name = "openai"
-version = "2.8.0"
+version = "2.8.1"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "openai-2.8.0-py3-none-any.whl", hash = "sha256:ba975e347f6add2fe13529ccb94d54a578280e960765e5224c34b08d7e029ddf"},
-    {file = "openai-2.8.0.tar.gz", hash = "sha256:4851908f6d6fcacbd47ba659c5ac084f7725b752b6bfa1e948b6fbfc111a6bad"},
+    {file = "openai-2.8.1-py3-none-any.whl", hash = "sha256:c6c3b5a04994734386e8dad3c00a393f56d3b68a27cd2e8acae91a59e4122463"},
+    {file = "openai-2.8.1.tar.gz", hash = "sha256:cb1b79eef6e809f6da326a7ef6038719e35aa944c42d081807bfa1be8060f15f"},
 ]
 
 [package.dependencies]
@@ -8136,4 +8136,4 @@ reference = "tuna"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "5ab4fa1c329120169c70f1029e1ca39616a9e6fea8fa08c84cef79cc0aafc717"
+content-hash = "7749347b79132fdf54d762864a7253d8647decc0ebdab68aa03b82365cd5605a"

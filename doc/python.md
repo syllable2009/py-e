@@ -109,5 +109,11 @@ def add(a, b):
 
 print(add(3, 5)) # 输出: Calling function: add \n 8
 
-# 
+# 直接运行
+python qianwen.py
+
+# 或作为模块运行（推荐用于避免路径问题）
+python -m qianwen
+
+
 
