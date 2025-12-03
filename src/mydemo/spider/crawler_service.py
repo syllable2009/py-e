@@ -9,6 +9,7 @@ from playwright.async_api import BrowserContext, BrowserType, Playwright, async_
 from sympy import false
 
 from mydemo.spider import config
+from mydemo.spider.cdp_browser import CDPBrowserManager
 
 
 ### 服务接口定义
@@ -20,6 +21,8 @@ class AbstractCrawler(ABC):
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
         self.cdp_manager = None
         self.client: AbstractApiClient = None
+        self.brower = None
+        self.browser_context = None
 
     async def do_with_playwright_cdp(self) -> None:
         pass
@@ -33,8 +36,8 @@ class AbstractCrawler(ABC):
     async def start_with_playwright(self):
         playwright_proxy_format, httpx_proxy_format = None, None
         async with async_playwright() as playwright:
-            self.chromium = playwright.chromium
-            self.browser_context = await self.launch_browser(self.chromium, playwright_proxy_format, self.user_agent,
+            self.brower = playwright.chromium
+            self.browser_context = await self.launch_browser(self.brower, playwright_proxy_format, self.user_agent,
                                                              headless=False)
             await self.do_with_playwright()
 
@@ -47,10 +50,11 @@ class AbstractCrawler(ABC):
 
     # @abstractmethod
     async def launch_browser(self, chromium: BrowserType, playwright_proxy: Optional[Dict], user_agent: Optional[
-        str],headless: bool = True) -> BrowserContext:
+        str], headless: bool = True) -> BrowserContext:
+        # 配置浏览器数据
         home_path = Path(__file__).parent.resolve()
         user_data_dir = os.path.join(home_path, "browser_data", config.PLATFORM)
-        browser_context = await chromium.launch_persistent_context(
+        self.browser_context = await chromium.launch_persistent_context(
             user_data_dir=user_data_dir,
             accept_downloads=True,
             headless=headless,
@@ -62,8 +66,9 @@ class AbstractCrawler(ABC):
             user_agent=user_agent or self.user_agent,
             channel="chrome",  # 使用系统的Chrome稳定版
         )
-        return browser_context
+        return self.browser_context
 
+    # 基于 Chrome DevTools Protocol
     async def launch_browser_with_cdp(self, playwright: Playwright, playwright_proxy: Optional[Dict],
                                       user_agent: Optional[str], headless: bool = True) -> BrowserContext:
         """
@@ -74,6 +79,21 @@ class AbstractCrawler(ABC):
         :param headless: 无头模式
         :return: 浏览器上下文
         """
+        try:
+            self.cdp_brower = CDPBrowserManager()
+            self.browser_context = await self.cdp_manager.launch_and_connect(
+                playwright=playwright,
+                playwright_proxy=playwright_proxy,
+                user_agent=user_agent,
+                headless=headless,
+            )
+            # 显示浏览器信息
+            browser_info = await self.cdp_manager.get_browser_info()
+            print(f"[launch_browser_with_cdp] CDP浏览器信息: {browser_info}")
+            return self.browser_context
+        except Exception as e:
+            print(f"[launch_browser_with_cdp] CDP模式启动失败，回退到标准模式: {e}")
+
         # 默认实现：回退到标准模式
         return await self.launch_browser(playwright.chromium, playwright_proxy, user_agent, headless)
 
