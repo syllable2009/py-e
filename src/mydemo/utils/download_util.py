@@ -11,19 +11,28 @@ from playwright.async_api import Page, Locator
 async def on_close_popup(popup_page):
     # 可选：记录日志或做其他处理
     print(f"on_close_popup, closing: {popup_page.url}")
-    await popup_page.close()
+    try:
+        await popup_page.close()
+    except Exception:
+        # 忽略关闭失败（如已关闭）
+        pass
 
 
 # 场景 1：点击 <a download> 或普通下载链接（直接触发），点击后浏览器不跳转页面，直接开始下载
-async def download_direct_link(page: Page, locator: Locator, save_dir: str = "./downloads"):
+async def download_direct_link(page: Page, locator: Locator, save_dir: str = "./downloads",
+                               timeout: float = 30_000):
     listener_added = False
     try:
-        #
+        # 添加弹窗处理，关闭弹窗
         page.on("popup", on_close_popup)
         listener_added = True
         os.makedirs(save_dir, exist_ok=True)
-        async with page.expect_download() as download_info:
+        async with page.expect_download(timeout=timeout) as download_info:
             # 不要用 page.click(selector)，而用 locator.click()
+            # 除非你确定元素是动态插入且 locator 创建过早
+            await locator.wait_for(state="attached", timeout=10_000)
+            # locator.click() 内部已包含智能等待，通常无需 wait_for
+            # await locator.click(timeout=10_000)
             await locator.click()
 
         download = await download_info.value
@@ -37,8 +46,12 @@ async def download_direct_link(page: Page, locator: Locator, save_dir: str = "./
         file_path = os.path.join(save_dir, filename)
         await download.save_as(file_path)
         return file_path
+    except TimeoutError as te:
+        print(f"Download {page.url} did not start within {timeout / 1000:.1f} seconds")
+        return None
     except Exception as e:
-        raise Exception(f"download_direct_link error: {e}")
+        print(f"download_direct_link {page} error: {e}")
+        return None
     finally:
         # 清理监听器（避免内存泄漏）
         if listener_added:
@@ -46,10 +59,11 @@ async def download_direct_link(page: Page, locator: Locator, save_dir: str = "./
 
 
 # 场景 2：点击按钮后打开新页面，新页面自动下载或含下载按钮，点击后弹出 _blank 新窗口，自动开始下载，或需再点一次“确认下载”
-async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./downloads"):
+async def download_via_popup(page: Page, locator: Locator, save_dir: str = "./downloads",
+                             timeout: float = 30_000):
     os.makedirs(save_dir, exist_ok=True)
     # 监听新页面
-    async with page.expect_popup() as popup_info:
+    async with page.expect_popup(timeout=timeout) as popup_info:
         await locator.click()
     popup = await popup_info.value
     try:

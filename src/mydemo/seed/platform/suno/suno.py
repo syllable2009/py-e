@@ -105,13 +105,19 @@ class SunoCrawler(AbstractCrawler):
         # 判断登录信息，已经登录了
         # 获取当前用户信息
         # 构造 headers
-
+        create_btn = '/html/body/div[1]/div[1]/div[1]/div[3]/a[2]/span/span'
+        by_xpath = await get_locate_by_xpath(self.context_page, create_btn)
+        print(f"by_xpath:{by_xpath}")
+        await by_xpath.click()
+        await asyncio.sleep(3)
+        if 1 == 1:
+            return
         headers = {
             "Authorization": f"Bearer {jwt}"
         }
         resp = await http_get("https://studio-api.prod.suno.com/api/session/", headers=headers)
         print(f"resp:{resp.json()}")
-        create_btn = '/html/body/div[1]/div[1]/div[1]/div[3]/a[2]/span/span'
+
 
         await get_locate_by_xpath(self.context_page, create_btn, state="attached")
 
@@ -119,10 +125,7 @@ class SunoCrawler(AbstractCrawler):
         # await self.add_lyrics()
         # 创建音乐
         # await self.create_music()
-        await asyncio.sleep(3)
 
-        if 1 == 1:
-            return
         # 模拟浏览器操作
         resp = await http_get("https://studio-api.prod.suno.com/api/project/default", headers=headers)
         print(f"resp2:{resp.json()}")
