@@ -4,7 +4,7 @@ import sys
 from typing import Optional
 import config
 
-from mydemo.spider.crawler_service import AbstractCrawler
+# from mydemo.spider.crawler_service import AbstractCrawler
 from mydemo.spider.spider_factory import SpiderFactory
 
 # 全局变量用于控制关闭
@@ -19,7 +19,7 @@ async def async_cleanup():
     print("[Cleanup] 清理完成")
 
 
-crawler: Optional[AbstractCrawler] = None
+# crawler: Optional[AbstractCrawler] = None
 
 
 async def main():

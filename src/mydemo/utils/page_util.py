@@ -1,4 +1,7 @@
 import asyncio
+import os
+import time
+from pathlib import Path
 from urllib.parse import urljoin
 
 from playwright.async_api import Page, expect, Locator, async_playwright, BrowserContext
@@ -260,6 +263,59 @@ async def t_open_url_on_new_page():
         except Exception as e:
             print("Error:", e)
         await browser.close()
+
+
+class PlaywrightTimeoutError:
+    pass
+
+
+async def get_locate_by_xpath(
+        page: Page,
+        xpath: str,
+        timeout: float = 10000,
+        screenshot_dir: str = "./screenshots",
+        state: str = "visible"  # 可选: "attached", "visible", "hidden"
+) -> Locator:
+    """
+    通过 XPath 在页面中查找元素，返回其 Locator 对象。
+
+    :param page: Playwright 页面对象
+    :param xpath: XPath 表达式，例如 "//button[@id='submit']"
+    :param timeout: 超时时间（毫秒），默认 10000ms（10秒）
+    :param screenshot_dir: 出错时保存截图的目录
+    :param state: 等待的元素状态，默认 "visible"（可选: "attached", "visible", "hidden"）
+    :return: 定位成功的 Locator 对象
+    :raises RuntimeError: 元素未在指定时间内达到目标状态时抛出，并附带截图
+    """
+    locator = page.locator(f"xpath={xpath}")
+    try:
+        # 第一步：确保元素已附加到 DOM（否则 scroll_into_view_if_needed 会失败）
+        await locator.wait_for(state="attached", timeout=timeout)
+        # 第二步：滚动到元素（如果不在视口内）
+        await locator.scroll_into_view_if_needed(timeout=timeout)
+        # 第三步：等待目标状态（如 visible）
+        if state != "attached":
+            await locator.wait_for(state=state, timeout=timeout)
+        # print(f"locate_by_xpath: waiting for element by XPath: {xpath} (state={state})")
+        # await locator.wait_for(state=state, timeout=timeout)
+    except (PlaywrightTimeoutError, Exception) as e:
+        # 准备截图
+        Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
+        timestamp = int(time.time())
+        prefix = "timeout" if isinstance(e, PlaywrightTimeoutError) else "error"
+        screenshot_path = os.path.join(screenshot_dir, f"{prefix}_locate_xpath_{timestamp}.png")
+        try:
+            await page.screenshot(path=screenshot_path, full_page=True)
+        except Exception as save_err:
+            screenshot_path = f"[截图失败: {save_err}]"
+
+        raise RuntimeError(
+            f"在页面 {page.url} 上通过 XPath '{xpath}' 定位元素时发生错误: {e}\n"
+            f"已保存截图：{screenshot_path}"
+        ) from e
+
+    print(f"locate_by_xpath: waiting for element by XPath: {xpath} (state={state})")
+    return locator
 
 
 if __name__ == "__main__":
