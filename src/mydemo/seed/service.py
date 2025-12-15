@@ -5,6 +5,7 @@ from typing import Optional, Dict
 
 from playwright.async_api import async_playwright, BrowserType, BrowserContext
 
+from mydemo.pywright.chrome_util import chromium_args
 from mydemo.seed import config
 
 
@@ -44,11 +45,27 @@ class AbstractCrawler(ABC):
                 "width": 1920,
                 "height": 1080
             },
+            permissions=["geolocation"],
             user_agent=user_agent or self.user_agent,
             channel="chrome",  # 使用系统的Chrome稳定版
+            args=chromium_args
         )
         # self.browser = await self.brower_type.launch(
         #     headless=False
         # )
         # self.browser_context = await self.browser.new_context()
+        # 关键：删除 WebDriver 标志
+        await self.browser_context.add_init_script("""
+               Object.defineProperty(navigator, 'webdriver', {
+                   get: () => undefined,
+               });
+               window.chrome = { runtime: {} };
+               // 可选：伪造 plugins 和 mimeTypes
+               Object.defineProperty(navigator, 'plugins', {
+                   get: () => [1, 2, 3, 4, 5],
+               });
+               Object.defineProperty(navigator, 'mimeTypes', {
+                   get: () => [1, 2, 3, 4, 5],
+               });
+           """)
         return self.browser_context

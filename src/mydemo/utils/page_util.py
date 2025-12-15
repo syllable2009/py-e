@@ -1,10 +1,13 @@
 import asyncio
 import os
+import random
 import time
 from pathlib import Path
 from urllib.parse import urljoin
 
 from playwright.async_api import Page, expect, Locator, async_playwright, BrowserContext
+
+from mydemo.utils.screenshot_util import save_screenshot_on_page
 
 
 ### 适用于playwright的page_util
@@ -287,35 +290,85 @@ async def get_locate_by_xpath(
     :return: 定位成功的 Locator 对象
     :raises RuntimeError: 元素未在指定时间内达到目标状态时抛出，并附带截图
     """
+    print(f"locate_by_xpath: waiting for element by XPath: {xpath} (state={state})")
     locator = page.locator(f"xpath={xpath}")
     try:
         # 第一步：确保元素已附加到 DOM（否则 scroll_into_view_if_needed 会失败）
         await locator.wait_for(state="attached", timeout=timeout)
-        # 第二步：滚动到元素（如果不在视口内）
-        await locator.scroll_into_view_if_needed(timeout=timeout)
         # 第三步：等待目标状态（如 visible）
         if state != "attached":
             await locator.wait_for(state=state, timeout=timeout)
         # print(f"locate_by_xpath: waiting for element by XPath: {xpath} (state={state})")
         # await locator.wait_for(state=state, timeout=timeout)
-    except (PlaywrightTimeoutError, Exception) as e:
+        # 第二步：滚动到元素（如果不在视口内）Playwright 提供的一个高效但机械式的滚动方法 —— 它会瞬间将元素滚动到视口（通常是顶部或居中）
+        # await locator.scroll_into_view_if_needed(timeout=timeout)
+        await human_like_scroll_to_locator(locator, duration_ms=3000)
+    except Exception as e:
         # 准备截图
-        Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
-        timestamp = int(time.time())
-        prefix = "timeout" if isinstance(e, PlaywrightTimeoutError) else "error"
-        screenshot_path = os.path.join(screenshot_dir, f"{prefix}_locate_xpath_{timestamp}.png")
-        try:
-            await page.screenshot(path=screenshot_path, full_page=True)
-        except Exception as save_err:
-            screenshot_path = f"[截图失败: {save_err}]"
-
+        await save_screenshot_on_page(page, screenshot_dir=screenshot_dir, prefix='error')
         raise RuntimeError(
-            f"在页面 {page.url} 上通过 XPath '{xpath}' 定位元素时发生错误: {e}\n"
-            f"已保存截图：{screenshot_path}"
+            f"在页面 {page.url} 上通过 XPath '{xpath}' 定位元素时发生错误: {e}"
+            f"已保存页面现场"
         ) from e
-
-    print(f"locate_by_xpath: waiting for element by XPath: {xpath} (state={state})")
     return locator
+
+
+async def human_like_move(page, selector):
+    # 先移动到元素附近，再精确点击（模拟人眼定位误差）
+    box = await page.locator(selector).bounding_box()
+    if not box:
+        return
+    await page.wait_for_timeout(random.randint(2000, 5000))
+    # 随机偏移（±20px）
+    x = box["x"] + random.randint(-20, 20)
+    y = box["y"] + random.randint(-20, 20)
+
+    # 模拟鼠标轨迹（分段移动）
+    page.mouse.move(100, 100)  # 起点
+    steps = random.randint(3, 6)
+    for i in range(steps):
+        page.mouse.move(
+            100 + (x - 100) * (i + 1) / steps,
+            100 + (y - 100) * (i + 1) / steps
+        )
+        asyncio.sleep(random.uniform(0.1, 0.3))
+
+    await page.mouse.click(x, y)
+    asyncio.sleep(random.uniform(0.5, 1.5))  # 点击后停顿
+
+
+async def human_like_scroll_to_locator(locator, duration_ms: int = 1000):
+    handle = await locator.element_handle()
+    await handle.evaluate(f"""
+        (element, duration) => {{
+            // ... 同上 JS 代码，但用 element 而不是 querySelector
+            const start = window.pageYOffset;
+            const end = element.getBoundingClientRect().top + window.pageYOffset;
+            const distance = end - start;
+            const startTime = Date.now();
+
+            function easeInOutQuad(t, b, c, d) {{
+                t /= d / 2;
+                if (t < 1) return c / 2 * t * t + b;
+                t--;
+                return -c / 2 * (t * (t - 2) - 1) + b;
+            }}
+
+            function animateScroll() {{
+                const now = Date.now();
+                const elapsed = Math.min(now - startTime, duration);
+                const scrollTo = easeInOutQuad(elapsed, start, distance, duration);
+                window.scrollTo(0, scrollTo);
+                if (elapsed < duration) {{
+                    requestAnimationFrame(animateScroll);
+                }}
+            }}
+
+            animateScroll();
+        }}
+    """, duration_ms)
+
+    await locator.page.wait_for_timeout(300)
 
 
 if __name__ == "__main__":

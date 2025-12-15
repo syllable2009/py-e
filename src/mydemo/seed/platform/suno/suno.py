@@ -1,9 +1,12 @@
 import asyncio
 import json
+import random
+
 from playwright.async_api import async_playwright, expect
 from mydemo.seed.service import AbstractCrawler
 from mydemo.utils.http_util import http_get
 from mydemo.utils.page_util import get_locate_by_xpath
+from mydemo.utils.screenshot_util import save_screenshot_on_page
 
 TARGET_URL = "auth.suno.com/v1/client"
 # 10:24 创建
@@ -77,6 +80,7 @@ class SunoCrawler(AbstractCrawler):
     def __init__(self) -> None:
         super().__init__()
         self.index_url = "https://suno.com/"
+        self.index_url = "https://www.hapiziyuan.com/"
 
     async def load_with_playwright(self):
         with open("auth.json") as f:
@@ -94,7 +98,7 @@ class SunoCrawler(AbstractCrawler):
         self.context_page.on("request", log_request)
         self.context_page.on("response", log_response)
         await self.context_page.goto(self.index_url, wait_until="domcontentloaded", timeout=10000)
-        await asyncio.sleep(3)
+        await self.context_page.wait_for_timeout(random.randint(1000, 3000))
         # localStorage 是 origin（协议 + 域名 + 端口）隔离的
         # local_storage = await self.context_page.evaluate("() => JSON.stringify(localStorage)")
         # with open("auth.json", "w") as f:
@@ -106,10 +110,12 @@ class SunoCrawler(AbstractCrawler):
         # 获取当前用户信息
         # 构造 headers
         create_btn = '/html/body/div[1]/div[1]/div[1]/div[3]/a[2]/span/span'
+        create_btn = '/html/body/main/div/div[1]/div[2]/a[6]/div[1]/h3'
         by_xpath = await get_locate_by_xpath(self.context_page, create_btn)
         print(f"by_xpath:{by_xpath}")
         await by_xpath.click()
-        await asyncio.sleep(3)
+        await self.context_page.wait_for_timeout(random.randint(1000, 3000))
+        await save_screenshot_on_page(self.context_page, prefix= 'detail')
         if 1 == 1:
             return
         headers = {
