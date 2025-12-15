@@ -21,6 +21,7 @@ lib64/
 parts/
 sdist/
 browser_data/
+screenshots/
 var/
 *.egg-info/
 .installed.cfg
