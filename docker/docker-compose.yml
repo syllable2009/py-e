@@ -1,0 +1,202 @@
+docker network ls
+docker network rm host
+  # 只能定义一个host的网络
+docker network create --driver=host myhost
+
+docker inspect 镜像名:latest | grep -i version
+
+networks:
+  mynet:
+    name: mynet
+    driver: bridge
+
+# nascab nas软件云客云
+services:
+  nascab:
+    image: ypptec/nascab
+    container_name: nascab
+    ports:
+      - "8888:80"
+      - "5555:90"
+    volumes:
+      - /myData:/myData
+      - /nascabData:/root/.local/share/nascab
+      - /:/main
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
+
+services:
+  file:
+    image: minio/minio:RELEASE.2022-05-26T05-48-41Z
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - /Users/jiaxiaopeng/docker/minio/data:/data
+    environment:
+      - MINIO_ACCESS_KEY=myminioadmin
+      - MINIO_SECRET_KEY=myminioadmin
+    networks:
+      - mynet
+    command: server /data --console-address ":9001"
+  search:
+    image: getmeili/meilisearch:v1.15
+    container_name: meili
+    restart: unless-stopped
+    ports:
+      - 7700:7700
+    networks:
+      - mynet
+    environment:
+      - MEILI_MASTER_KEY=R5T5WDon_QrPqhFK97NgGlTVa81iuVlN44TMLiClTTg
+    volumes:
+      - /Users/jiaxiaopeng/docker/meili/data:/meili_data
+  cache:
+    image: redis:7.2.6
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - mynet
+    environment:
+      - REDIS_PASSWORD=admin1234
+  db:
+    image: mysql:8.0
+    container_name: mysql8
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    networks:
+      - mynet
+    volumes:
+      - /Users/jiaxiaopeng/docker/mysql8/data:/var/lib/mysql
+      - /Users/jiaxiaopeng/docker/mysql8/conf:/etc/mysql/conf.d
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin123456
+      - MYSQL_DATABASE=kit
+      - MYSQL_USER=wordpress
+      - MYSQL_PASSWORD=wordpress
+    command:
+      - --default_authentication_plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+  musicn:
+    image: ghcr.io/wy580477/musicn-container:latest
+    container_name: musicn
+    restart: unless-stopped
+    networks:
+      - mynet
+    entrypoint: [ "/sbin/tini", "--", "msc", "-q" ]
+    ports:
+      - "7478:7478"
+    volumes:
+      - /Users/jiaxiaopeng/Music:/data
+
+  pairdrop:
+    image: linuxserver/pairdrop:latest
+    container_name: pairdrop
+    restart: unless-stopped
+    networks:
+      - mynet
+    ports:
+      - 3049:3000
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - WS_FALLBACK=true
+      - TZ=Asia/Shanghai
+
+    docker pull nyanmisaka/jellyfin:latest-rockchip
+
+  readeck:
+    image: codeberg.org/readeck/readeck:latest
+    container_name: readeck
+    restart: unless-stopped
+    ports:
+      - 8792:8000
+    networks:
+      - mynet
+    volumes:
+      - ./data:/readeck
+
+  gohttpserver:
+    image: codeskyblue/gohttpserver
+    container_name: gohttpserver
+    restart: unless-stopped
+    ports:
+      - "7050:8000"
+    networks:
+      - mynet
+    volumes:
+      - /Users/jiaxiaopeng/data:/app/public
+    command:
+      - --upload
+      - --delete
+      - --auth-type=http
+      - --auth-http=admin1234:admin1234
+
+  pigallery2:
+    image: bpatrik/pigallery2:2.0.0-debian-bullseye
+    container_name: pigallery2
+    restart: always
+    ports:
+      - 8213:80
+    networks:
+      - mynet
+    volumes:
+      - /你的路径/config:/app/data/config
+      - /你的路径/data:/app/data/db
+      - /你的路径/images:/app/data/images:ro
+      - /你的路径/tmp:/app/data/tmp
+    environment:
+      - NODE_ENV=production
+
+  # docker pull --platform=linux/arm64 rustfs/rustfs:latest
+  # pigallery2可以和低版本的minio结合使用，一个用于专业存储提供url分享，一个用于搜索
+  # 二进制存储可采用rustfs，也可以分享，但是源文件不可见。
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    ports:
+      - "9000:9000"
+    volumes:
+      - "/mydata/rustfs/data:/data"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - RUSTFS_ACCESS_KEY=rustfsadmin
+      - RUSTFS_SECRET_KEY=rustfsadmin
+    restart: unless-stopped
+
+# copyparty 只需要下载一个 Python 文件到本地，直接运行就能搭建一个功能完整的文件服务器。
+#
+services:
+  copyparty:
+    image: copyparty/ac
+    container_name: copyparty
+    user: "1000"
+    ports:
+      - "3923:3923"
+    volumes:
+      - /mnt/nas:/w:rw
+      - /mydata/cfg:/cfg
+    restart: unless-stopped
+
+# vert干干净净的文件转换神器
+# https://github.com/VERT-sh/VERT
+services:
+  vert:
+    image: ghcr.io/vert-sh/vert:latest
+    container_name: vert
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+#
