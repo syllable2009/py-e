@@ -302,7 +302,7 @@ async def get_locate_by_xpath(
         # await locator.wait_for(state=state, timeout=timeout)
         # 第二步：滚动到元素（如果不在视口内）Playwright 提供的一个高效但机械式的滚动方法 —— 它会瞬间将元素滚动到视口（通常是顶部或居中）
         # await locator.scroll_into_view_if_needed(timeout=timeout)
-        await human_like_scroll_to_locator(locator, duration_ms=3000)
+        await smooth_scroll_to_element(locator)
     except Exception as e:
         # 准备截图
         await save_screenshot_on_page(page, screenshot_dir=screenshot_dir, prefix='error')
@@ -369,6 +369,38 @@ async def human_like_scroll_to_locator(locator, duration_ms: int = 1000):
     """, duration_ms)
 
     await locator.page.wait_for_timeout(300)
+
+
+async def smooth_scroll_to_element(locator, timeout=30000, duration_ms=1000):
+    """
+    平滑滚动到元素
+
+    Args:
+        locator: Playwright 定位器
+        timeout: 超时时间
+        duration: 滚动持续时间（毫秒）
+    """
+    # 先确保元素存在
+    await locator.wait_for(state="attached", timeout=timeout)
+
+    # 获取元素的边界框
+    bounding_box = await locator.bounding_box()
+    if bounding_box:
+        # 使用 JavaScript 平滑滚动
+        await locator.page.evaluate("""
+            ({element, duration}) => {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'center'
+                });
+
+                // 添加额外的延迟模拟人类操作
+                return new Promise(resolve => {
+                    setTimeout(resolve, duration);
+                });
+            }
+        """, {"element": await locator.element_handle(), "duration": duration_ms})
 
 
 if __name__ == "__main__":
