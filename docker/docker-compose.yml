@@ -1,7 +1,8 @@
 docker network ls
-docker network rm host
-  # 只能定义一个host的网络
-docker network create --driver=host myhost
+
+docker network create --driver=bridge mynet
+docker network create mynet
+docker network create -d bridge mynet
 
 docker inspect 镜像名:latest | grep -i version
 
@@ -184,6 +185,8 @@ services:
     user: "1000"
     ports:
       - "3923:3923"
+    networks:
+      - mynet
     volumes:
       - /mnt/nas:/w:rw
       - /mydata/cfg:/cfg
@@ -197,6 +200,8 @@ services:
     container_name: vert
     ports:
       - "3000:80"
+    networks:
+      - mynet
     restart: unless-stopped
 
 #
