@@ -74,3 +74,4 @@ picture/
 
 ### 绝对删除注释 ,防止暴露秘钥
 config1.ini
+.env
