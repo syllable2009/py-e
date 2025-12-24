@@ -1,0 +1,17 @@
+{
+  "unique_key": "https://github.com/security/advanced-security/demo?locale=en-us&ref_cta=request+demo&ref_loc=footer&ref_page=/code_security_lp",
+  "url": "https://github.com/security/advanced-security/demo?utm_campaign=Demo_utmroutercampaign&ref_cta=Request+demo&ref_loc=footer&ref_page=%2Fcode_security_lp&locale=en-US",
+  "method": "GET",
+  "payload": null,
+  "headers": {},
+  "user_data": {
+    "__crawlee": {
+      "enqueueStrategy": "same-hostname",
+      "crawlDepth": 2
+    }
+  },
+  "retry_count": 0,
+  "no_retry": false,
+  "loaded_url": null,
+  "handled_at": null
+}

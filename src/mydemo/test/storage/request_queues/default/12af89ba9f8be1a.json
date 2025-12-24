@@ -1,0 +1,17 @@
+{
+  "unique_key": "https://github.com/spark?locale=en-us",
+  "url": "https://github.com/spark?utm_source=web-spark-both-main-cta&utm_campaign=spark-launch-sep-2025&locale=en-US",
+  "method": "GET",
+  "payload": null,
+  "headers": {},
+  "user_data": {
+    "__crawlee": {
+      "enqueueStrategy": "same-hostname",
+      "crawlDepth": 2
+    }
+  },
+  "retry_count": 0,
+  "no_retry": false,
+  "loaded_url": null,
+  "handled_at": null
+}

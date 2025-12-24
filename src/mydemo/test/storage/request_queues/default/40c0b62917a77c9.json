@@ -1,0 +1,18 @@
+{
+  "unique_key": "https://github.com/enterprise/startups",
+  "url": "https://github.com/enterprise/startups",
+  "method": "GET",
+  "payload": null,
+  "headers": {},
+  "user_data": {
+    "__crawlee": {
+      "enqueueStrategy": "same-hostname",
+      "state": 4,
+      "crawlDepth": 1
+    }
+  },
+  "retry_count": 0,
+  "no_retry": false,
+  "loaded_url": null,
+  "handled_at": "2025-12-24 13:40:50.935127+00:00"
+}
