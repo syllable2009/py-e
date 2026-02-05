@@ -3,12 +3,18 @@ import signal
 import sys
 from typing import Optional
 import config
-
+from fastapi import FastAPI
 # from mydemo.spider.crawler_service import AbstractCrawler
 from mydemo.spider.spider_factory import SpiderFactory
 
 # 全局变量用于控制关闭
 shutdown_event = asyncio.Event()
+
+app = FastAPI(
+    title="FastAPI + Poetry + Docker",
+    description="A standard FastAPI project",
+    version="0.1.0"
+)
 
 
 async def async_cleanup():

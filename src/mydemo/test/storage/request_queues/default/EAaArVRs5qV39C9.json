@@ -1,0 +1,23 @@
+{
+  "id": "EAaArVRs5qV39C9",
+  "unique_key": "https://example.com",
+  "order_no": null,
+  "handled_at": "2025-12-25 06:41:47.865587+00:00",
+  "request": {
+    "url": "https://example.com",
+    "method": "GET",
+    "headers": {},
+    "payload": null,
+    "user_data": {
+      "__crawlee": {
+        "state": 3
+      }
+    },
+    "retry_count": 0,
+    "no_retry": false,
+    "loaded_url": "https://example.com/",
+    "handled_at": "2025-12-25 06:41:47.865587+00:00",
+    "unique_key": "https://example.com",
+    "id": "EAaArVRs5qV39C9"
+  }
+}
