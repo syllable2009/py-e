@@ -65,6 +65,19 @@ async def handle_VOA_LIST_page(context: PlaywrightCrawlingContext) -> None:
             raise e
             continue
 
+@router.handler("VOA_DETAIL")
+async def handle_VOA_DETAIL_page(context: PlaywrightCrawlingContext) -> None:
+    context.log.info(f"VOA_DETAIL:{context.request.url}")
+    # 通过 class 和 role 定位（推荐）
+    play_button = context.page.locator('button.jp-play[role="button"]')
+    # 等待按钮出现并可点击
+    await play_button.wait_for(state="visible", timeout=10000)
+    # 点击播放
+    await play_button.click()
+
+    await asyncio.sleep(30)
+    pass
+
 
 async def handle_default_page(context: PlaywrightCrawlingContext) -> None:
     context.log.info(f"default:{context.request.url}")
@@ -75,7 +88,8 @@ router.default_handler(handle_default_page)
 
 async def playwright_crawler() -> None:
     await crawler.run([
-        Request.from_url("https://www.21voa.com/", label="VOA_LIST")
+        # Request.from_url("https://www.21voa.com/", label="VOA_LIST")
+        Request.from_url("https://www.21voa.com/special_english/wilbur-and-orville-wright-the-first-airplane-93397.html", label="VOA_DETAIL")
         # Request.from_url(url="https://crawlee.dev", label="LIST"),
         # Request.from_url(url="https://crawlee.dev/python/docs/examples/crawl-specific-links-on-website",
         #                  label="DETAIL"),
