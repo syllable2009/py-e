@@ -1,0 +1,24 @@
+{
+  "id": "Rk4J1Y6MPwYxIMh",
+  "unique_key": "https://www.21voa.com",
+  "order_no": null,
+  "handled_at": "2026-02-12 08:17:10.682877+00:00",
+  "request": {
+    "url": "https://www.21voa.com/",
+    "method": "GET",
+    "headers": {},
+    "payload": null,
+    "user_data": {
+      "__crawlee": {
+        "state": 3
+      },
+      "label": "VOA_LIST"
+    },
+    "retry_count": 0,
+    "no_retry": false,
+    "loaded_url": "https://www.21voa.com/",
+    "handled_at": "2026-02-12 08:17:10.682877+00:00",
+    "unique_key": "https://www.21voa.com",
+    "id": "Rk4J1Y6MPwYxIMh"
+  }
+}
