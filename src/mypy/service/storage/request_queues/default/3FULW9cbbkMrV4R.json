@@ -2,7 +2,7 @@
   "id": "3FULW9cbbkMrV4R",
   "unique_key": "https://crawlee.dev",
   "order_no": null,
-  "handled_at": "2026-02-12 07:34:25.083806+00:00",
+  "handled_at": "2026-02-11 07:45:19.500928+00:00",
   "request": {
     "url": "https://crawlee.dev",
     "method": "GET",
@@ -16,8 +16,8 @@
     },
     "retry_count": 0,
     "no_retry": false,
-    "loaded_url": "https://crawlee.dev",
-    "handled_at": "2026-02-12 07:34:25.083806+00:00",
+    "loaded_url": "https://crawlee.dev/",
+    "handled_at": "2026-02-11 07:45:19.500928+00:00",
     "unique_key": "https://crawlee.dev",
     "id": "3FULW9cbbkMrV4R"
   }
