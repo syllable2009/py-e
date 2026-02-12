@@ -50,16 +50,19 @@ async def handle_VOA_LIST_page(context: PlaywrightCrawlingContext) -> None:
             # 可选：将链接加入请求队列（如果你需要后续爬取）
             # await context.enqueue_links(urls=[absolute_url], label="VOA_ARTICLE")
 
-            lrc_href = None
-            lrc_element = li.locator("a.lrc")  # 关键：用 class="lrc" 定位
-            if await lrc_element.count() > 0:  # 检查是否存在
-                lrc_href = await lrc_element.get_attribute("href")
-                lrc_url = urljoin(str(context.request.loaded_url), lrc_href) if lrc_href else None
+            lrc_url = None
+            #
+            lrc_element = await li.locator("a.lrc").all()  # 关键：用 class="lrc" 定位
+            if lrc_element:
+                lrc_href = await lrc_element[0].get_attribute("href")
+                if lrc_href and lrc_href.strip() not in ("", "#", "javascript:void(0)"):  # 检查是否存在
+                    lrc_url = urljoin(baseUrl, lrc_href) if lrc_href else None
             if lrc_url:
                 context.log.info(f"  └─ LRC: {lrc_url}")
 
         except Exception as e:
             context.log.warning(f"Failed to process li element: {e}")
+            raise e
             continue
 
 

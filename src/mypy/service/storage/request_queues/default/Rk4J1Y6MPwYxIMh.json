@@ -2,7 +2,7 @@
   "id": "Rk4J1Y6MPwYxIMh",
   "unique_key": "https://www.21voa.com",
   "order_no": null,
-  "handled_at": "2026-02-12 08:17:10.682877+00:00",
+  "handled_at": "2026-02-12 08:46:22.309889+00:00",
   "request": {
     "url": "https://www.21voa.com/",
     "method": "GET",
@@ -17,7 +17,7 @@
     "retry_count": 0,
     "no_retry": false,
     "loaded_url": "https://www.21voa.com/",
-    "handled_at": "2026-02-12 08:17:10.682877+00:00",
+    "handled_at": "2026-02-12 08:46:22.309889+00:00",
     "unique_key": "https://www.21voa.com",
     "id": "Rk4J1Y6MPwYxIMh"
   }
